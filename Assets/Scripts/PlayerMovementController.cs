@@ -1,10 +1,11 @@
 ﻿using UnityEngine;
-using System.Collections;
+using Unity.Netcode;
 
-public class PlayerMovementController : MonoBehaviour
+public class PlayerMovementController : NetworkBehaviour
 {
     [Header("Configuration")]
     [SerializeField] private float moveSpeed = 2f;
+    [SerializeField] private NetworkVariable<Vector3> position;
 
     [Header("Dependencies")]
     [SerializeField] private InputProvider inputProvider;
@@ -13,11 +14,18 @@ public class PlayerMovementController : MonoBehaviour
     private void Start()
     {
         inputProvider ??= GetComponent<InputProvider>();
-        characterController ??= GetComponent<CharacterController>();
+        characterController = GetComponent<CharacterController>();
     }
 
     private void FixedUpdate()
     {
-        characterController.Move(inputProvider.Current.movement * moveSpeed * Time.fixedDeltaTime);
+        if (IsServer)
+        {
+            characterController.Move(inputProvider.Current.movement * moveSpeed * Time.fixedDeltaTime);
+            position.Value = transform.position;
+        } else
+        {
+            transform.position = position.Value;
+        }
     }
 }

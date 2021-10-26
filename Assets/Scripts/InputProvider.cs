@@ -1,12 +1,11 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using Unity.Netcode;
 
-public class InputProvider : MonoBehaviour
+public class InputProvider : NetworkBehaviour
 {
     [Serializable]
-    public class State
+    public struct State
     {
         public Vector3 movement;
 
@@ -25,25 +24,39 @@ public class InputProvider : MonoBehaviour
     }
 
     [Header("Runtime")]
-    [SerializeField] private State cumulativeInput;
     [SerializeField] private State currentInput;
+    [SerializeField] private State cumulativeInput;
     [SerializeField] private int sampleCount;
 
     private void Update()
     {
-        var movement = new Vector3(Input.GetAxis("Horizontal"), 0f, Input.GetAxis("Vertical"));
-        if (movement.magnitude > 1f)
-            movement.Normalize();
+        if (IsOwner)
+        {
+            var movement = new Vector3(Input.GetAxis("Horizontal"), 0f, Input.GetAxis("Vertical"));
+            if (movement.magnitude > 1f)
+                movement.Normalize();
 
-        cumulativeInput.movement += movement;
-        sampleCount++;
+            cumulativeInput.movement += movement;
+            sampleCount++;
+        }
     }
 
     private void FixedUpdate()
     {
-        currentInput = cumulativeInput.AverageOver(sampleCount);
-        cumulativeInput.Reset();
-        sampleCount = 0;
+        if (IsOwner)
+        {
+            currentInput = cumulativeInput.AverageOver(sampleCount);
+            cumulativeInput.Reset();
+            sampleCount = 0;
+
+            SubmitInputServerRpc(currentInput);
+        }
+    }
+
+    [ServerRpc]
+    private void SubmitInputServerRpc(State state)
+    {
+        currentInput = state;
     }
 
     public State Current => currentInput;
