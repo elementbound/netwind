@@ -1,5 +1,12 @@
 {
   "dependencies": {
+    "com.community.netcode.transport.enet": {
+      "version": "https://github.com/Unity-Technologies/multiplayer-community-contributions.git?path=/Transports/com.community.netcode.transport.enet",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "b08829c71ca40065fe6d7c99cd3aee059cd02fa7"
+    },
     "com.unity.burst": {
       "version": "1.5.6",
       "depth": 2,

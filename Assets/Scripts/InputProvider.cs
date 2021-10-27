@@ -16,6 +16,8 @@ public class InputProvider : NetworkBehaviour
 
         public State AverageOver(int sampleCount)
         {
+            sampleCount = sampleCount > 0 ? sampleCount : 1;
+
             return new State()
             {
                 movement = this.movement / sampleCount

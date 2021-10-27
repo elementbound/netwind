@@ -10,6 +10,8 @@ GameObject:
   m_Component:
   - component: {fileID: 7763243523963654036}
   - component: {fileID: 8223645882527960981}
+  - component: {fileID: 7787635852073647110}
+  - component: {fileID: 829931377658939012}
   - component: {fileID: 7763243523963654035}
   - component: {fileID: 7763243523963654034}
   - component: {fileID: 7763243523963654033}
@@ -52,6 +54,49 @@ MonoBehaviour:
   AlwaysReplicateAsRoot: 0
   DontDestroyWithOwner: 0
   AutoObjectParentSync: 1
+--- !u!114 &7787635852073647110
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7763243523963654032}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e96cb6065543e43c4a752faaa1468eb1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  SyncPositionX: 1
+  SyncPositionY: 1
+  SyncPositionZ: 1
+  SyncRotAngleX: 1
+  SyncRotAngleY: 1
+  SyncRotAngleZ: 1
+  SyncScaleX: 1
+  SyncScaleY: 1
+  SyncScaleZ: 1
+  PositionThreshold: 0.001
+  RotAngleThreshold: 0.01
+  ScaleThreshold: 0.01
+  InLocalSpace: 0
+  Interpolate: 1
+  CanCommitToTransform: 0
+--- !u!114 &829931377658939012
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7763243523963654032}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81476e57755d81a408497be671399781, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  networkTransform: {fileID: 0}
+  characterController: {fileID: 0}
+  authorativePosition: {x: 0, y: 0, z: 0}
+  isSyncEnabled: 0
 --- !u!33 &7763243523963654035
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -132,9 +177,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 86b0f2c1ec1c3a5459f5235aa059e861, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cumulativeInput:
-    movement: {x: 0, y: 0, z: 0}
   currentInput:
+    movement: {x: 0, y: 0, z: 0}
+  cumulativeInput:
     movement: {x: 0, y: 0, z: 0}
   sampleCount: 0
 --- !u!114 &7763243523963654037
@@ -149,6 +194,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 094681979b62786478e8d2d22ad68515, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 4
+  moveSpeed: 12
   inputProvider: {fileID: 0}
   characterController: {fileID: 0}
+  networkTransform: {fileID: 0}
+  localPlayerTransform: {fileID: 0}
