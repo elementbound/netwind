@@ -9,17 +9,10 @@ public class PlayerMovementController : NetworkBehaviour
 
     [Header("Dependencies")]
     [SerializeField] private InputProvider inputProvider;
-    [SerializeField] private CharacterController characterController;
-    [SerializeField] private NetworkTransform networkTransform;
-    [SerializeField] private LocalPlayerTransform localPlayerTransform;
 
     private void Start()
     {
         inputProvider ??= GetComponent<InputProvider>();
-        characterController = GetComponent<CharacterController>();
-
-        networkTransform = GetComponent<NetworkTransform>();
-        localPlayerTransform = GetComponent<LocalPlayerTransform>();
     }
 
     private void OnEnable()
@@ -35,13 +28,7 @@ public class PlayerMovementController : NetworkBehaviour
 
     private void NetworkUpdate()
     {
-        if (IsServer || IsLocalPlayer)
-            characterController.Move(inputProvider.Current.movement * moveSpeed * NetworkManager.LocalTime.FixedDeltaTime);
-
-        if (IsLocalPlayer && !IsServer)
-        {
-            var sync = inputProvider.Current.movement.magnitude < 0.1f;
-            localPlayerTransform.IsSyncEnabled = sync;
-        }
+        if (IsServer)
+            transform.position += inputProvider.Current.movement * moveSpeed * NetworkManager.LocalTime.FixedDeltaTime;
     }
 }
