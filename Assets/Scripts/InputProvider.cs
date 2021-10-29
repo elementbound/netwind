@@ -30,6 +30,16 @@ public class InputProvider : NetworkBehaviour
     [SerializeField] private State cumulativeInput;
     [SerializeField] private int sampleCount;
 
+    private void OnEnable()
+    {
+        NetworkManager.NetworkTickSystem.Tick += NetworkUpdate;
+    }
+
+    private void OnDisable()
+    {
+        NetworkManager.NetworkTickSystem.Tick -= NetworkUpdate;
+    }
+
     private void Update()
     {
         if (IsOwner)
@@ -43,7 +53,7 @@ public class InputProvider : NetworkBehaviour
         }
     }
 
-    private void FixedUpdate()
+    private void NetworkUpdate()
     {
         if (IsOwner)
         {
