@@ -3290,8 +3290,8 @@ GameObject:
   m_Component:
   - component: {fileID: 1110335019}
   - component: {fileID: 1110335018}
-  - component: {fileID: 1110335017}
   - component: {fileID: 1110335020}
+  - component: {fileID: 1110335017}
   m_Layer: 0
   m_Name: Network Manager
   m_TagString: Untagged
@@ -3308,17 +3308,16 @@ MonoBehaviour:
   m_GameObject: {fileID: 1110335016}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 57c3fe0d2bf241e48b7cddeaa1b933af, type: 3}
+  m_Script: {fileID: 11500000, guid: 6960e84d07fb87f47956e7a81d71c4e6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Port: 7777
-  Address: 127.0.0.1
-  MaxClients: 100
-  MessageBufferSize: 5120
-  PingInterval: 500
-  TimeoutLimit: 32
-  TimeoutMinimum: 5000
-  TimeoutMaximum: 30000
+  m_ProtocolType: 0
+  m_MaximumPacketSize: 1400
+  m_MaxPacketQueueSize: 128
+  m_SendQueueBatchSize: 6144
+  ConnectionData:
+    Address: 127.0.0.1
+    Port: 7777
 --- !u!114 &1110335018
 MonoBehaviour:
   m_ObjectHideFlags: 0

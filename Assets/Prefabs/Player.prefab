@@ -65,10 +65,32 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 81476e57755d81a408497be671399781, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  fromPosition: {x: 0, y: 0, z: 0}
-  toPosition: {x: 0, y: 0, z: 0}
+  isLocalAuthorative: 0
+  correctionSpeed: 1
+  cacheTime: 1
+  interpolate: 1
+  fromTransform:
+    position: {x: 0, y: 0, z: 0}
+    rotationEuler: {x: 0, y: 0, z: 0}
+    scale: {x: 0, y: 0, z: 0}
+  toTransform:
+    position: {x: 0, y: 0, z: 0}
+    rotationEuler: {x: 0, y: 0, z: 0}
+    scale: {x: 0, y: 0, z: 0}
+  deltaTransform:
+    position: {x: 0, y: 0, z: 0}
+    rotationEuler: {x: 0, y: 0, z: 0}
+    scale: {x: 0, y: 0, z: 0}
   fromTimestamp: 0
-  isSyncEnabled: 0
+  appliedTranslation: {x: 0, y: 0, z: 0}
+  latency: 0
+  tickLatency: 0
+  serverTime: 0
+  localTime: 0
+  lastTimestamp: 0
+  authorativePosition: {x: 0, y: 0, z: 0}
+  closestCachedPosition: {x: 0, y: 0, z: 0}
+  correctiveDelta: {x: 0, y: 0, z: 0}
 --- !u!33 &7763243523963654035
 MeshFilter:
   m_ObjectHideFlags: 0

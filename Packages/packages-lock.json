@@ -70,9 +70,19 @@
     },
     "com.unity.mathematics": {
       "version": "1.2.1",
-      "depth": 3,
+      "depth": 2,
       "source": "registry",
       "dependencies": {},
+      "url": "https://packages.unity.com"
+    },
+    "com.unity.netcode.adapter.utp": {
+      "version": "1.0.0-pre.2",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "com.unity.netcode.gameobjects": "1.0.0-pre.2",
+        "com.unity.transport": "1.0.0-pre.6"
+      },
       "url": "https://packages.unity.com"
     },
     "com.unity.netcode.gameobjects": {
@@ -165,6 +175,17 @@
       "dependencies": {
         "com.unity.sysroot": "0.1.19-preview",
         "com.unity.sysroot.linux-x86_64": "0.1.14-preview"
+      },
+      "url": "https://packages.unity.com"
+    },
+    "com.unity.transport": {
+      "version": "1.0.0-pre.6",
+      "depth": 1,
+      "source": "registry",
+      "dependencies": {
+        "com.unity.collections": "1.0.0-pre.5",
+        "com.unity.burst": "1.5.5",
+        "com.unity.mathematics": "1.2.1"
       },
       "url": "https://packages.unity.com"
     },

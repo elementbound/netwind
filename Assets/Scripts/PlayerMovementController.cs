@@ -28,7 +28,7 @@ public class PlayerMovementController : NetworkBehaviour
 
     private void NetworkUpdate()
     {
-        if (IsServer)
+        if (IsServer || IsOwner)
             transform.position += inputProvider.Current.movement * moveSpeed * NetworkManager.LocalTime.FixedDeltaTime;
     }
 }
