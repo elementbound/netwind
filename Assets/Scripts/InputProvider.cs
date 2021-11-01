@@ -37,7 +37,8 @@ public class InputProvider : NetworkBehaviour
 
     private void OnDisable()
     {
-        NetworkManager.NetworkTickSystem.Tick -= NetworkUpdate;
+        if (NetworkManager)
+            NetworkManager.NetworkTickSystem.Tick -= NetworkUpdate;
     }
 
     private void Update()
@@ -60,15 +61,7 @@ public class InputProvider : NetworkBehaviour
             currentInput = cumulativeInput.AverageOver(sampleCount);
             cumulativeInput.Reset();
             sampleCount = 0;
-
-            // SubmitInputServerRpc(currentInput);
         }
-    }
-
-    [ServerRpc]
-    private void SubmitInputServerRpc(State state)
-    {
-        currentInput = state;
     }
 
     public State Current => currentInput;
