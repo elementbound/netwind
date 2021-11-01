@@ -60,7 +60,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7763243523963654032}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 81476e57755d81a408497be671399781, type: 3}
   m_Name: 
@@ -69,6 +69,8 @@ MonoBehaviour:
   correctionSpeed: 1
   cacheTime: 1
   interpolate: 1
+  enableCorrection: 0
+  enableGradualCorrection: 1
   fromTransform:
     position: {x: 0, y: 0, z: 0}
     rotationEuler: {x: 0, y: 0, z: 0}
@@ -82,7 +84,9 @@ MonoBehaviour:
     rotationEuler: {x: 0, y: 0, z: 0}
     scale: {x: 0, y: 0, z: 0}
   fromTimestamp: 0
+  lastAuthorativeTick: 0
   appliedTranslation: {x: 0, y: 0, z: 0}
+  applyDelta: 0
   latency: 0
   tickLatency: 0
   serverTime: 0
@@ -188,5 +192,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 094681979b62786478e8d2d22ad68515, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 12
+  moveSpeed: 6
   inputProvider: {fileID: 0}

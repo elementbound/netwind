@@ -44,7 +44,7 @@ public class InputProvider : NetworkBehaviour
     {
         if (IsOwner)
         {
-            var movement = new Vector3(Input.GetAxis("Horizontal"), 0f, Input.GetAxis("Vertical"));
+            var movement = new Vector3(Input.GetAxisRaw("Horizontal"), 0f, Input.GetAxisRaw("Vertical"));
             if (movement.magnitude > 1f)
                 movement.Normalize();
 
@@ -61,7 +61,7 @@ public class InputProvider : NetworkBehaviour
             cumulativeInput.Reset();
             sampleCount = 0;
 
-            SubmitInputServerRpc(currentInput);
+            // SubmitInputServerRpc(currentInput);
         }
     }
 

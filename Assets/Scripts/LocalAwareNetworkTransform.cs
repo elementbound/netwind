@@ -20,16 +20,20 @@ public class LocalAwareNetworkTransform : NetworkBehaviour
     public float correctionSpeed = 1f;
     public float cacheTime = 1f;
     public bool interpolate = false;
+    public bool enableCorrection = false;
+    public bool enableGradualCorrection = false;
 
     [Header("Runtime")]
     [SerializeField] private TransformState fromTransform;
     [SerializeField] private TransformState toTransform;
     [SerializeField] private TransformState deltaTransform;
     [SerializeField] private double fromTimestamp;
+    [SerializeField] private int lastAuthorativeTick;
     [SerializeField] private Vector3 appliedTranslation;
-    private Dictionary<double, TransformState> transformCache = new Dictionary<double, TransformState>();
+    private Dictionary<int, TransformState> transformCache = new Dictionary<int, TransformState>();
 
     [Header("Gizmos")]
+    [SerializeField] private bool applyDelta;
     [SerializeField] private double latency;
     [SerializeField] private int tickLatency;
     [SerializeField] private double serverTime;
@@ -39,10 +43,15 @@ public class LocalAwareNetworkTransform : NetworkBehaviour
     [SerializeField] private Vector3 closestCachedPosition;
     [SerializeField] private Vector3 correctiveDelta;
 
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
+        isLocalAuthorative = IsOwner && !IsServer;
+    }
+
     private void OnEnable()
     {
         NetworkManager.Singleton.NetworkTickSystem.Tick += NetworkUpdate;
-        isLocalAuthorative = IsOwner && !IsServer;
 
         fromTransform = new TransformState()
         {
@@ -58,7 +67,7 @@ public class LocalAwareNetworkTransform : NetworkBehaviour
             scale = transform.localScale
         };
 
-        transformCache[NetworkManager.LocalTime.Time] = toTransform;
+        transformCache[NetworkManager.LocalTime.Tick] = toTransform;
     }
 
     private void OnDisable()
@@ -80,32 +89,58 @@ public class LocalAwareNetworkTransform : NetworkBehaviour
             toTransform.rotationEuler = transform.localRotation.eulerAngles;
             toTransform.scale = transform.localScale;
 
-            fromTimestamp = NetworkManager.ServerTime.Time;
+            fromTimestamp = NetworkManager.LocalTime.Time;
 
             if (IsServer)
                 CommitPositionClientRpc(toTransform, NetworkManager.LocalTime.Time, NetworkManager.LocalTime.Tick);
             else if (isLocalAuthorative)
             {
-                // Disregard corrections before caching - this should be where the client thinks they are based on local simulation
-                toTransform.position -= appliedTranslation;
-                transformCache[NetworkManager.LocalTime.Time] = toTransform;
-                toTransform.position += appliedTranslation;
+                transformCache[NetworkManager.LocalTime.Tick] = toTransform;
 
                 transformCache = transformCache
-                    .Where(entry => NetworkManager.LocalTime.Time - entry.Key <= cacheTime)
+                    .Where(entry => NetworkManager.LocalTime.Tick - entry.Key <= cacheTime * NetworkManager.LocalTime.TickRate)
                     .ToDictionary(entry => entry.Key, entry => entry.Value);
 
                 // Apply authorative delta
-                var deltaStrength = 1f / (1f + Mathf.Pow(deltaTransform.position.magnitude / 4f, 2f));
-                var appliedDelta = deltaTransform.position.normalized * deltaStrength * correctionSpeed * NetworkManager.LocalTime.FixedDeltaTime;
-                if (appliedDelta.magnitude > deltaTransform.position.magnitude)
-                    appliedDelta = deltaTransform.position;
+                if (enableGradualCorrection)
+                {
+                    var deltaStrength = 1f / (1f + Mathf.Pow(deltaTransform.position.magnitude / 4f, 2f));
+                    var appliedDelta = deltaTransform.position.normalized * deltaStrength * correctionSpeed * NetworkManager.LocalTime.FixedDeltaTime;
+                    if (appliedDelta.magnitude > deltaTransform.position.magnitude)
+                        appliedDelta = deltaTransform.position;
 
-                appliedTranslation = appliedDelta;
-                correctiveDelta = appliedDelta / NetworkManager.LocalTime.FixedDeltaTime;
+                    appliedTranslation = appliedDelta;
+                    correctiveDelta = appliedDelta / NetworkManager.LocalTime.FixedDeltaTime;
 
-                toTransform.position += appliedDelta;
-                deltaTransform.position -= appliedDelta;
+                    fromTransform.position += appliedDelta;
+                    toTransform.position += appliedDelta;
+                    transform.localPosition += appliedDelta;
+                    deltaTransform.position -= appliedDelta;
+
+                    var updatedCache = new Dictionary<int, TransformState>();
+                    foreach (var entry in transformCache)
+                    {
+                        if (entry.Key >= lastAuthorativeTick)
+                        {
+                            var cacheValue = entry.Value;
+                            cacheValue.position += appliedDelta;
+                            updatedCache[entry.Key] = cacheValue;
+                        }
+                        else
+                            updatedCache[entry.Key] = entry.Value;
+                    }
+                    transformCache = updatedCache;
+                }
+
+                if (applyDelta)
+                {
+                    transform.localPosition += deltaTransform.position;
+                    toTransform.position += deltaTransform.position;
+                    fromTransform.position += deltaTransform.position;
+                    deltaTransform.position = Vector3.zero;
+
+                    applyDelta = false;
+                }
             }
         }
     }
@@ -136,30 +171,40 @@ public class LocalAwareNetworkTransform : NetworkBehaviour
 
         if (isLocalAuthorative)
         {
-            // Find nearest cached transform to timestamp
-            TransformState closestTransform = transformCache.Values.GetEnumerator().Current;
-            double closestMetric = double.PositiveInfinity;
+            if (!transformCache.ContainsKey(tick))
+                Debug.LogError($"Missing tick from cache #{tick}");
 
-            foreach (var entry in transformCache)
-            {
-                var cachedTimestamp = entry.Key;
-                var cachedTransform = entry.Value;
-                var metric = Math.Abs((timestamp - latency) - cachedTimestamp);
-
-                if (metric < closestMetric)
-                {
-                    closestMetric = metric;
-                    closestTransform = cachedTransform;
-                }
-            }
-
-            if (Vector3.Distance(toTransform.position, transform.position) < Vector3.Distance(closestTransform.position, transform.position))
-                closestTransform = toTransform;
+            var closestTransform = transformCache[tick];
+            lastAuthorativeTick = tick;
 
             // Set delta from closest match to cumulative delta
             deltaTransform.position = transform.position - closestTransform.position;
             deltaTransform.scale = transform.scale - closestTransform.scale;
             deltaTransform.rotationEuler = AccumulateRotationTransform(deltaTransform.rotationEuler, transform.rotationEuler, closestTransform.rotationEuler);
+
+            if (enableCorrection)
+            {
+                this.transform.localPosition += deltaTransform.position;
+                toTransform.position += deltaTransform.position;
+                fromTransform.position += deltaTransform.position;
+
+                var updatedCache = new Dictionary<int, TransformState>();
+
+                foreach (var entry in transformCache)
+                {
+                    if (entry.Key >= tick)
+                    {
+                        var cacheValue = entry.Value;
+                        cacheValue.position += deltaTransform.position;
+                        updatedCache[entry.Key] = cacheValue;
+                    }
+                    else
+                        updatedCache[entry.Key] = entry.Value;
+                }
+                transformCache = updatedCache;
+
+                deltaTransform.position = Vector3.zero;
+            }
 
             authorativePosition = transform.position;
             closestCachedPosition = closestTransform.position;
