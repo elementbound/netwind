@@ -5,11 +5,17 @@ using System;
 public class PlayerMovementController : NetworkBehaviour
 {
     private static readonly int HISTORY_LENGTH = 64;
+    private static readonly int DISPLAY_OFFSET = 2;
 
     [Serializable]
     private struct CharacterState
     {
         public Vector3 position;
+
+        public bool Equals(CharacterState other)
+        {
+            return Vector3.Distance(this.position, other.position) < 0.05f;
+        }
     }
 
     [Header("Configuration")]
@@ -81,7 +87,7 @@ public class PlayerMovementController : NetworkBehaviour
 
         int currentTick = NetworkManager.LocalTime.Tick;
 
-        fromState = toState;
+        fromState = CaptureState();
         fromTime = NetworkManager.LocalTime.Time;
         toTime = fromTime + deltaTime;
 
@@ -89,15 +95,13 @@ public class PlayerMovementController : NetworkBehaviour
         {
             if (needsResimulation)
             {
-                ResimulateFrom(earliestInput, currentTick, deltaTime);
-
-                CommitStateClientRpc(stateCache.Get(currentTick), currentTick);
+                ResimulateFrom(earliestInput, currentTick + 1, deltaTime);
 
                 needsResimulation = false;
                 earliestInput = currentTick;
             }
         }
-        
+
         if (IsLocalPlayer && !IsServer)
         {
             inputCache.Set(inputProvider.Current, currentTick);
@@ -105,7 +109,7 @@ public class PlayerMovementController : NetworkBehaviour
 
             if (needsResimulation)
             {
-                ResimulateFrom(earliestState, currentTick, deltaTime);
+                ResimulateFrom(earliestState, currentTick + 1, deltaTime);
 
                 needsResimulation = false;
                 earliestState = 0;
@@ -115,18 +119,21 @@ public class PlayerMovementController : NetworkBehaviour
         if (IsLocalPlayer && IsServer)
         {
             inputCache.Set(inputProvider.Current, currentTick);
-            ResimulateFrom(currentTick - 1, currentTick, deltaTime);
-
-            CommitStateClientRpc(stateCache.Get(currentTick), currentTick);
+            ResimulateFrom(currentTick, currentTick + 1, deltaTime);
         }
 
-        toState = stateCache.Get(currentTick - 1);
+        toState = stateCache.Get(currentTick - DISPLAY_OFFSET);
     }
 
     private void ResimulateFrom(int from, int to, float deltaTime)
     {
         for (int tick = from; tick <= to; ++tick)
+        {
             stateCache.Set(Simulate(inputCache.Get(tick), stateCache.Get(tick - 1), deltaTime), tick);
+
+            if (IsServer)
+                CommitStateClientRpc(stateCache.Get(tick), tick);
+        }
     }
 
     private CharacterState Simulate(InputProvider.State input, CharacterState sourceState, float deltaTime)
@@ -154,6 +161,9 @@ public class PlayerMovementController : NetworkBehaviour
     [ClientRpc]
     private void CommitStateClientRpc(CharacterState state, int tick)
     {
+        if (stateCache.Get(tick).Equals(state))
+            return;
+
         stateCache.Set(state, tick);
 
         earliestState = Math.Max(earliestState, tick);
@@ -167,5 +177,25 @@ public class PlayerMovementController : NetworkBehaviour
 
         earliestInput = Math.Min(earliestInput, tick);
         needsResimulation = true;
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        var currentTime = NetworkManager.LocalTime.Time;
+        var f = 1.0 - (toTime - currentTime) / (toTime - fromTime);
+
+        var interpolatedState = new CharacterState()
+        {
+            position = Vector3.Lerp(fromState.position, toState.position, (float)f)
+        };
+
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(fromState.position, 1f);
+
+        Gizmos.color = Color.green;
+        Gizmos.DrawWireSphere(toState.position, 1f);
+
+        Gizmos.color = Color.Lerp(Color.red, Color.green, (float)f);
+        Gizmos.DrawWireSphere(interpolatedState.position, 0.5f);
     }
 }
