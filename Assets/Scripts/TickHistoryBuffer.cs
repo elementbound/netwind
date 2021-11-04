@@ -15,8 +15,6 @@ public class TickHistoryBuffer<T>
     [SerializeField] private int latestFrame;
     [SerializeField] private int headIdx;
 
-    public T defaultValue;
-
     public TickHistoryBuffer(int size, int startingFrame)
     {
         data = new Entry[size];
@@ -25,6 +23,16 @@ public class TickHistoryBuffer<T>
 
         for (int i = 0; i < size; ++i)
             data[i].isPresent = false;
+    }
+
+    private int FrameToIdx(int frame)
+    {
+        int offset = frame - latestFrame;
+
+        if (offset <= -data.Length)
+            throw new IndexOutOfRangeException($"Can't convert frame {frame} to index; frame is too far in the past");
+
+        return (headIdx + offset + data.Length) % data.Length;
     }
 
     /// <summary>
@@ -87,7 +95,7 @@ public class TickHistoryBuffer<T>
         }
         else if (at > latestFrame)
         {
-            while (latestFrame < at)
+            while (latestFrame < at - 1)
                 PushEmpty();
 
             Push(value);
@@ -102,18 +110,22 @@ public class TickHistoryBuffer<T>
     /// 
     /// If the requested frame is in the past, the last known state will be returned.
     /// 
-    /// If the requested frame is in the past and no present frame is found, the default state will be returned.
-    /// 
     /// <param name="frame">Frame index</param>
     /// <returns>Found state</returns>
+    /// 
+    /// <throws>IndexOutOfRange if no backfill frame found</throws>
     public T Get(int frame)
     {
-        if (frame > latestFrame)
-            frame = latestFrame;
+        int latestKnownFrame = GetLatestKnownFrame();
+        int earliestKnownFrame = GetEarliestKnownFrame();
+
+        if (frame >= latestKnownFrame)
+            return data[FrameToIdx(latestKnownFrame)].value;
+
+        if (frame <= earliestKnownFrame)
+            return data[FrameToIdx(earliestKnownFrame)].value;
 
         int offset = latestFrame - frame;
-        if (offset >= data.Length)
-            offset = data.Length - 1;
 
         while (offset < data.Length)
         {
@@ -124,6 +136,32 @@ public class TickHistoryBuffer<T>
                 ++offset;
         }
 
-        return defaultValue;
+        throw new IndexOutOfRangeException($"No past data found for frame {frame} ( earliest known is {earliestKnownFrame} )");
+    }
+
+    public int LatestFrame => latestFrame;
+
+    public int GetLatestKnownFrame()
+    {
+        for (int i = 0; i < data.Length; ++i)
+        {
+            int idx = (headIdx + data.Length - i) % data.Length;
+            if (data[idx].isPresent)
+                return latestFrame - i;
+        }
+
+        return latestFrame - data.Length;
+    }
+
+    public int GetEarliestKnownFrame()
+    {
+        for (int i = 0; i < data.Length; ++i)
+        {
+            int idx = (headIdx + i + 1) % data.Length;
+            if (data[idx].isPresent)
+                return latestFrame - data.Length + i;
+        }
+
+        return latestFrame;
     }
 }

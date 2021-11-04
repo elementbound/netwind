@@ -4,7 +4,7 @@ using System;
 
 public class PlayerMovementController : NetworkBehaviour
 {
-    private static readonly int HISTORY_LENGTH = 64;
+    private static readonly int HISTORY_LENGTH = 128;
     private static readonly int DISPLAY_OFFSET = 2;
 
     [Serializable]
@@ -20,6 +20,7 @@ public class PlayerMovementController : NetworkBehaviour
 
     [Header("Configuration")]
     [SerializeField] private float moveSpeed = 2f;
+    [SerializeField] private bool enableInterpolation = true;
 
     [Header("Dependencies")]
     [SerializeField] private InputProvider inputProvider;
@@ -29,7 +30,7 @@ public class PlayerMovementController : NetworkBehaviour
     [SerializeField] private TickHistoryBuffer<CharacterState> stateCache;
 
     [SerializeField] private int earliestInput;
-    [SerializeField] private int earliestState;
+    [SerializeField] private int latestState;
     [SerializeField] private bool needsResimulation = false;
 
     [SerializeField] private CharacterState fromState;
@@ -59,26 +60,35 @@ public class PlayerMovementController : NetworkBehaviour
 
         int currentTick = NetworkManager.LocalTime.Tick;
         earliestInput = currentTick;
-        earliestState = currentTick;
+        latestState = currentTick;
 
         inputCache = new TickHistoryBuffer<InputProvider.State>(HISTORY_LENGTH, currentTick);
         stateCache = new TickHistoryBuffer<CharacterState>(HISTORY_LENGTH, currentTick);
 
-        stateCache.Set(CaptureState(), currentTick);
-        stateCache.defaultValue = CaptureState();
+        // Backfill state cache
+        var state = CaptureState();
+
+        for (int i = 0; i <= DISPLAY_OFFSET + 1; ++i)
+            stateCache.Set(state, currentTick - i);
     }
 
     private void Update()
     {
-        var currentTime = NetworkManager.LocalTime.Time;
-        var f = 1.0 - (toTime - currentTime) / (toTime - fromTime);
-
-        var interpolatedState = new CharacterState()
+        if (enableInterpolation)
         {
-            position = Vector3.Lerp(fromState.position, toState.position, (float)f)
-        };
+            var currentTime = NetworkManager.LocalTime.Time;
+            var f = 1.0 - (toTime - currentTime) / (toTime - fromTime);
 
-        ApplyState(interpolatedState);
+            var interpolatedState = new CharacterState()
+            {
+                position = Vector3.Lerp(fromState.position, toState.position, (float)f)
+            };
+
+            ApplyState(interpolatedState);
+        } else
+        {
+            ApplyState(toState);
+        }
     }
 
     private void NetworkUpdate()
@@ -95,7 +105,7 @@ public class PlayerMovementController : NetworkBehaviour
         {
             if (needsResimulation)
             {
-                ResimulateFrom(earliestInput, currentTick + 1, deltaTime);
+                ResimulateFrom(earliestInput, inputCache.GetLatestKnownFrame(), deltaTime);
 
                 needsResimulation = false;
                 earliestInput = currentTick;
@@ -109,20 +119,22 @@ public class PlayerMovementController : NetworkBehaviour
 
             if (needsResimulation)
             {
-                ResimulateFrom(earliestState, currentTick + 1, deltaTime);
+                ResimulateFrom(latestState, currentTick, deltaTime);
 
                 needsResimulation = false;
-                earliestState = 0;
+                latestState = 0;
             }
         }
 
         if (IsLocalPlayer && IsServer)
         {
             inputCache.Set(inputProvider.Current, currentTick);
-            ResimulateFrom(currentTick, currentTick + 1, deltaTime);
+
+            stateCache.Set(Simulate(inputCache.Get(currentTick), stateCache.Get(currentTick - 1), deltaTime), currentTick);
+            CommitStateClientRpc(stateCache.Get(currentTick), currentTick);
         }
 
-        toState = stateCache.Get(currentTick - DISPLAY_OFFSET);
+        toState = stateCache.Get(Math.Min(currentTick - DISPLAY_OFFSET, stateCache.GetLatestKnownFrame()));
     }
 
     private void ResimulateFrom(int from, int to, float deltaTime)
@@ -161,12 +173,16 @@ public class PlayerMovementController : NetworkBehaviour
     [ClientRpc]
     private void CommitStateClientRpc(CharacterState state, int tick)
     {
-        if (stateCache.Get(tick).Equals(state))
+        if (IsServer)
             return;
+
+        if (stateCache.Get(tick).Equals(state))
+            // Update state to its existing value, so it doesn't go stale
+            stateCache.Set(stateCache.Get(tick), tick);
 
         stateCache.Set(state, tick);
 
-        earliestState = Math.Max(earliestState, tick);
+        latestState = Math.Max(latestState, tick);
         needsResimulation = true;
     }
 
@@ -181,6 +197,9 @@ public class PlayerMovementController : NetworkBehaviour
 
     private void OnDrawGizmosSelected()
     {
+        if (!Application.isPlaying)
+            return;
+
         var currentTime = NetworkManager.LocalTime.Time;
         var f = 1.0 - (toTime - currentTime) / (toTime - fromTime);
 
