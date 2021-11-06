@@ -62,6 +62,8 @@ it's playable, even if just barely.
 
 ### Inconsistent movement
 
+> **FIXED**, see [commit](https://github.com/elementbound/unity-multiplayer-test/commit/fbabed3122dbadba4c6fab8fc5e7492d0c4b4a08)
+
 See video:
 
 [![Inconsistent movement](https://img.youtube.com/vi/3wPXBLMyq88/0.jpg)](https://www.youtube.com/watch?v=3wPXBLMyq88)
@@ -75,7 +77,41 @@ floating point representation, since the jumps can be more than 0.25 units on a 
 My best guess would be the inputs, which - in theory - also shouldn't be an issue, since both the server and the client
 work with the same sampled inputs.
 
+#### Solution
+
+In short, the above happened due to a few errors in `TickHistoryBuffer` and some wrong assumptions in `PlayerMovementController`.
+
+Since data coming from a network might not be continuous, `TickHistoryBuffer` is prepared to handle these cases in a
+contiguous array. If data for a given frame is missing, it will mark that as not present and advance the write head.
+
+However, when setting a frame in the future, an additional empty ( not present ) frame was pushed every single time.
+This meant that even if we had continuous input, the cache would store an empty and a present frame. This was an issue
+for both input caching and interpolation. Simply pushing one less empty frame fixed it.
+
+In addition, `TickHistoryBuffer`'s original design revolved around *always* returning something sensible, even if we
+don't have any data. For example, when a requested frame is empty, it will just find the previous frame that's present.
+If there's no such frame, it will just return a configurable *default value.*
+
+This, combined with the fact that the buffer didn't recognize the earliest known frame and started looking for an older
+known frame resulted in players occasionally jumping between their current position and their original one.
+
+To counteract this, the configurable default value was removed, and an exception is thrown if there's no usable data in
+the buffer.
+
+In addition, state cache data is now backfilled on spawn, so there's always some sensible data to use.
+
+And last but not least, in `PlayerMovementController`, the server always resimulated the game to the *current* moment -
+which, at first, seemed like a reasonable idea. However, this did not take into account that we often don't have all the
+inputs from players up to the current moment. Especially when there's an actual network latency, the inputs will arrive
+a few ticks late, which means that simulating anything after the last received input is pure speculation.
+
+On the client side, all the inputs were present to the actual current moment, while the server only speculated after a
+point, which meant that the two simulations were not in sync. Even though the client had more legible information in
+this case, the server is always right, which caused the player to jump around on the client.
+
 ### Broken entity interpolation
+
+> **FIXED**, see [commit](https://github.com/elementbound/unity-multiplayer-test/commit/fbabed3122dbadba4c6fab8fc5e7492d0c4b4a08)
 
 See video:
 
@@ -86,6 +122,42 @@ if no interpolation was done.
 
 I suspect that the issue is that the interpolation is done based on the current frame, and not based on the last frames
 received from the server.
+
+#### Solution
+
+By default, the state displayed was always a few ticks behind. The idea behind this is that since there's latency, we
+won't always have up-to-date data on each client's state, so by introducing some 'artificial' latency, we give time for
+the new frames to appear and any reconciliations to happen as needed.
+
+This works well up to a certain latency. Let's see an example where:
+
+* The network tick rate is 30fps -> one network tick lasts ~33ms
+* We display the game state 2 ticks ago -> we are ~66ms behind the current moment
+* => Any latency under ~66ms will work smoothly
+
+And conversely, if the latency is above ~66ms, there won't be any new data in the cache, so we'll be displaying the
+latest known state.
+
+To my current knowledge, whatever solution is attempted for these cases, it's always a trade-off, since we're trying to
+display data that we don't have.
+
+* Prediction
+  * Use some algorithm to predict movement for frames where we lack the data
+  * My initial guess is that this is really difficult to get just right
+  * There'll still be cases where the prediction misses
+* Latency based on latest known state
+  * Instead of using currentTick - n, use latestKnownTick - n
+  * Theoretically, should work well regardless of latency, since we restrict ourselves to data we have
+  * Can be sensitive to inconsistent latencies
+* Clamping
+  * Continue using currentTick - n, but clamp to latestKnownTick
+  * As long as the latency is below threshold ( n * tickDuration ), interpolation works well
+  * Once latency is above threshold, interpolation stops
+
+I've opted to use Clamping, combined with increasing the artificial latency to 4 frames. This can work well for slower
+games, for fast-paced games prediction is probably the best solution.
+
+Also, interpolation was affected by the buffer issues revealed during the Inconsistent movement investigation.
 
 ## Known limitations
 
@@ -100,11 +172,9 @@ No collisions are considered at the moment, for two reasons:
    ( either normal or 2x as fast as configured ), speed would change both on the client and the server, but not at the
    same time.
 
-This is not a priority at the moment, I'll get back to it once the known issues are solved.
-
 ## Feedback
 
-I'm posting this repo mainly to ask for help. If you have any clues, advice, questions or comments, please feel free to contact me:
+With any questions or comments, please feel free to contact me:
 
 * on Twitter [@elementbound](https://twitter.com/elementbound)
 * on Reddit [/u/elementbound](https://www.reddit.com/user/elementbound)
