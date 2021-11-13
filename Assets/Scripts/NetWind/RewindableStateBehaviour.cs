@@ -10,6 +10,7 @@ namespace com.github.elementbound.NetWind
         [SerializeField] private TickHistoryBuffer<T> stateBuffer;
         [SerializeField] private int latestReceivedState = 0;
         [SerializeField] private bool hasNewState = false;
+        [SerializeField] private IRewindableInput controlledBy;
 
         public ulong NetId => NetworkObjectId;
 
@@ -19,15 +20,21 @@ namespace com.github.elementbound.NetWind
 
         public bool HasNewState => hasNewState;
 
+        public IRewindableInput ControlledBy => controlledBy;
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
 
             int currentTick = NetworkManager.LocalTime.Tick;
             stateBuffer = new TickHistoryBuffer<T>(NetworkRewindManager.Instance.HistorySize, currentTick);
-            
-            SaveState(currentTick);
-            SaveState(currentTick - NetworkRewindManager.Instance.DisplayOffset);
+
+            var state = CaptureState();
+            for (int i = 0; i < NetworkRewindManager.Instance.HistorySize; ++i)
+                stateBuffer.Set(state, currentTick - i);
+
+            if (controlledBy == null)
+                controlledBy = GetComponent<IRewindableInput>();
 
             NetworkRewindManager.Instance.RegisterState(this);
         }

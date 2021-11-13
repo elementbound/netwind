@@ -38,7 +38,7 @@ public class InputProvider : RewindableInputBehaviour<InputProvider.State>
 
     private void Update()
     {
-        if (IsOwner)
+        if (IsOwn)
         {
             var movement = new Vector3(Input.GetAxisRaw("Horizontal"), 0f, Input.GetAxisRaw("Vertical"));
             if (movement.magnitude > 1f)

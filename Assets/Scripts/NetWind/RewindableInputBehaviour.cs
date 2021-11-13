@@ -12,11 +12,13 @@ namespace com.github.elementbound.NetWind
         [SerializeField] private bool hasNewInput = false;
 
         public ulong NetId => NetworkObjectId;
-        public bool IsOwn => IsOwner;
+        public bool IsOwn => IsOwner || (IsOwnedByServer && IsServer);
 
         public int EarliestReceivedInput => earliestReceivedInput;
 
         public bool HasNewInput => hasNewInput;
+
+        public int LatestKnownInput => inputBuffer.GetLatestKnownFrame();
 
         public override void OnNetworkSpawn()
         {

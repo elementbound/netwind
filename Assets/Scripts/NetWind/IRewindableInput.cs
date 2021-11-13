@@ -8,5 +8,6 @@
         void AcknowledgeInputs();
         int EarliestReceivedInput { get; }
         bool HasNewInput { get; }
+        int LatestKnownInput { get; }
     }
 }

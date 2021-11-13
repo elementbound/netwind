@@ -45,6 +45,7 @@ namespace com.github.elementbound.NetWind
             int currentTick = NetworkManager.LocalTime.Tick;
             float deltaTime = NetworkManager.LocalTime.FixedDeltaTime;
 
+
             if (IsClient || IsHost)
             {
                 // Gather and send inputs
@@ -58,7 +59,7 @@ namespace com.github.elementbound.NetWind
 
                 bool hasNewState = stateHandlers.Any(state => state.HasNewState && state.IsOwn);
 
-                if (hasNewState)
+                if (hasNewState && !IsHost)
                 {
                     int resimulateFrom = stateHandlers
                         .Where(state => state.HasNewState)
@@ -81,22 +82,21 @@ namespace com.github.elementbound.NetWind
 
                             state.Simulate(tick, deltaTime);
                             state.SaveState(tick);
-                            state.CommitState(tick);
                         }
                     }
 
                     foreach (var state in stateHandlers)
                     {
                         state.AcknowledgeStates();
-                        state.RestoreState(currentTick - 1);
+                        state.RestoreState(currentTick - displayOffset);
                     }
                 }
             }
 
-            if (IsServer)
+            if (IsServer || IsHost)
             {
                 bool hasNewInput = inputHandlers.Any(input => input.HasNewInput);
-                
+
                 if (hasNewInput)
                 {
                     int earliestInput = inputHandlers
@@ -120,7 +120,8 @@ namespace com.github.elementbound.NetWind
 
                         foreach (var state in stateHandlers)
                         {
-                            // TODO: Only simulate if has input
+                            if (state.ControlledBy == null || state.ControlledBy.LatestKnownInput < tick)
+                                continue;
 
                             state.Simulate(tick, deltaTime);
                             state.SaveState(tick);
@@ -129,7 +130,7 @@ namespace com.github.elementbound.NetWind
                     }
 
                     foreach (var state in stateHandlers)
-                        state.RestoreState(currentTick - 1);
+                        state.RestoreState(currentTick - displayOffset);
                 }
             }
         }

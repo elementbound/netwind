@@ -9,5 +9,6 @@
         void AcknowledgeStates();
         int LatestReceivedState { get; }
         bool HasNewState { get; }
+        IRewindableInput ControlledBy { get; }
     }
 }
