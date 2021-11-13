@@ -1,11 +1,23 @@
 ﻿using UnityEngine;
 using Unity.Netcode;
+using com.github.elementbound.NetWind;
+using System;
 
-public class PlayerMovementController : NetworkBehaviour
+public class PlayerMovementController : RewindableStateBehaviour<PlayerMovementController.State>
 {
+    [Serializable]
+    public struct State
+    {
+        public Vector3 position;
+
+        public override string ToString()
+        {
+            return $"PlayerState({position})";
+        }
+    }
+
     [Header("Configuration")]
     [SerializeField] private float moveSpeed = 2f;
-    [SerializeField] private bool enableInterpolation = true;
 
     [Header("Dependencies")]
     [SerializeField] private InputProvider inputProvider;
@@ -13,21 +25,39 @@ public class PlayerMovementController : NetworkBehaviour
     private void OnEnable()
     {
         inputProvider ??= GetComponent<InputProvider>();
-
-        NetworkManager.Singleton.NetworkTickSystem.Tick += NetworkUpdate;
     }
 
-    private void OnDisable()
+    public override void Simulate(int tick, float deltaTime)
     {
-        if (NetworkManager)
-            NetworkManager.NetworkTickSystem.Tick -= NetworkUpdate;
-    }
-
-    private void NetworkUpdate()
-    {
-        float deltaTime = NetworkManager.LocalTime.FixedDeltaTime;
-
         var input = inputProvider.Current;
         transform.position += input.movement * moveSpeed * deltaTime;
+
+        Debug.Log($"[State] Simulated state from tick {tick} with result {CaptureState()}");
+    }
+
+    protected override State CaptureState()
+    {
+        var state = new State()
+        {
+            position = transform.position
+        };
+
+        return state;
+    }
+
+    protected override void ApplyState(State state)
+    {
+        transform.position = state.position;
+    }
+
+    protected override void CommitState(State state, int tick)
+    {
+        CommitStateClientRpc(state, tick);
+    }
+
+    [ClientRpc]
+    private void CommitStateClientRpc(State state, int tick)
+    {
+        HandleStateCommit(state, tick);
     }
 }

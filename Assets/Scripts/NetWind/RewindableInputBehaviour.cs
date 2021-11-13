@@ -9,11 +9,14 @@ namespace com.github.elementbound.NetWind
         [Header("NetWind")]
         [SerializeField] private TickHistoryBuffer<T> inputBuffer;
         [SerializeField] private int earliestReceivedInput;
+        [SerializeField] private bool hasNewInput = false;
 
         public ulong NetId => NetworkObjectId;
         public bool IsOwn => IsOwner;
 
         public int EarliestReceivedInput => earliestReceivedInput;
+
+        public bool HasNewInput => hasNewInput;
 
         public override void OnNetworkSpawn()
         {
@@ -28,12 +31,21 @@ namespace com.github.elementbound.NetWind
 
         public void RestoreInput(int tick)
         {
+            Debug.Log($"[Input] Restoring input {inputBuffer.Get(tick)} from tick {tick}");
             ApplyInput(inputBuffer.Get(tick));
         }
 
         public void SaveInput(int tick)
         {
-            inputBuffer.Set(CaptureInput(), tick);
+            if (IsOwner)
+            {
+                hasNewInput = true;
+                earliestReceivedInput = Math.Min(earliestReceivedInput, tick);
+            }
+
+            T input = CaptureInput();
+            Debug.Log($"[Input] Saving input {input} for tick {tick}");
+            inputBuffer.Set(input, tick);
         }
 
         public void CommitInput(int tick)
@@ -45,8 +57,16 @@ namespace com.github.elementbound.NetWind
 
         protected void HandleInputCommit(T state, int tick)
         {
+            Debug.Log($"[Server][Input] Received input {state} for tick {tick}");
             inputBuffer.Set(state, tick);
             earliestReceivedInput = Math.Min(tick, earliestReceivedInput);
+            hasNewInput = true;
+        }
+
+        public void AcknowledgeInputs()
+        {
+            earliestReceivedInput = NetworkManager.LocalTime.Tick;
+            hasNewInput = false;
         }
     }
 }

@@ -6263,7 +6263,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3bb59486f3aa24543962d9923f239a31, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  displayOffset: 2
+  displayOffset: 4
   historySize: 64
 --- !u!4 &1942836256
 Transform:

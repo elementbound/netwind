@@ -24,6 +24,11 @@ public class InputProvider : RewindableInputBehaviour<InputProvider.State>
                 movement = this.movement / sampleCount
             };
         }
+
+        public override string ToString()
+        {
+            return $"Input({movement})";
+        }
     }
 
     [Header("Runtime")]
@@ -46,6 +51,8 @@ public class InputProvider : RewindableInputBehaviour<InputProvider.State>
 
     protected override State CaptureInput()
     {
+        Debug.Log($"[Input] Capturing input {cumulativeInput.AverageOver(sampleCount)} from cumulative {cumulativeInput} over {sampleCount} samples");
+
         currentInput = cumulativeInput.AverageOver(sampleCount);
         cumulativeInput.Reset();
         sampleCount = 0;

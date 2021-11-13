@@ -5,6 +5,8 @@
         void SaveInput(int tick);
         void RestoreInput(int tick);
         void CommitInput(int tick);
+        void AcknowledgeInputs();
         int EarliestReceivedInput { get; }
+        bool HasNewInput { get; }
     }
 }
