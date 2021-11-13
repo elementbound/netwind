@@ -46,15 +46,55 @@ namespace com.github.elementbound.NetWind
             float deltaTime = NetworkManager.LocalTime.FixedDeltaTime;
 
 
-            if (IsClient || IsHost)
+            if (IsHost)
+            {
+                foreach (var input in inputHandlers)
+                    if (input.IsOwn)
+                        input.SaveInput(currentTick);
+
+                int earliestInput = inputHandlers
+                    .Where(input => input.HasNewInput)
+                    .Select(input => input.EarliestReceivedInput)
+                    .Min();
+
+                Debug.Log($"[Host] Received new input, earliest is {earliestInput} ( {currentTick - earliestInput} ago )");
+
+                foreach (var input in inputHandlers)
+                    input.AcknowledgeInputs();
+
+                Debug.Log($"[Host] Resimulating from {earliestInput} to {currentTick}");
+                for (int tick = earliestInput; tick <= currentTick; ++tick)
+                {
+                    foreach (var input in inputHandlers)
+                        input.RestoreInput(tick);
+
+                    foreach (var state in stateHandlers)
+                        state.RestoreState(tick - 1);
+
+                    foreach (var state in stateHandlers)
+                    {
+                        if (state.ControlledBy == null || state.ControlledBy.LatestKnownInput < tick)
+                            continue;
+
+                        state.Simulate(tick, deltaTime);
+                        state.SaveState(tick);
+                        state.CommitState(tick);
+                    }
+                }
+
+                foreach (var state in stateHandlers)
+                    state.RestoreState(currentTick - displayOffset);
+            }
+            else if (IsClient)
             {
                 // Gather and send inputs
                 foreach (var input in inputHandlers)
                 {
-                    input.SaveInput(currentTick);
-
-                    if (!IsServer && input.IsOwn)
+                    if (input.IsOwn)
+                    {
+                        input.SaveInput(currentTick);
                         input.CommitInput(currentTick);
+                    }
                 }
 
                 bool hasNewState = stateHandlers.Any(state => state.HasNewState && state.IsOwn);
@@ -63,6 +103,7 @@ namespace com.github.elementbound.NetWind
                 {
                     int resimulateFrom = stateHandlers
                         .Where(state => state.HasNewState)
+                        .Where(state => state.IsOwn)
                         .Select(state => state.LatestReceivedState)
                         .Min();
 
@@ -84,16 +125,15 @@ namespace com.github.elementbound.NetWind
                             state.SaveState(tick);
                         }
                     }
+                }
 
-                    foreach (var state in stateHandlers)
-                    {
-                        state.AcknowledgeStates();
-                        state.RestoreState(currentTick - displayOffset);
-                    }
+                foreach (var state in stateHandlers)
+                {
+                    state.AcknowledgeStates();
+                    state.RestoreState(currentTick - displayOffset);
                 }
             }
-
-            if (IsServer || IsHost)
+            else if (IsServer)
             {
                 bool hasNewInput = inputHandlers.Any(input => input.HasNewInput);
 

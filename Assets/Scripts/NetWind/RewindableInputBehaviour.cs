@@ -33,13 +33,19 @@ namespace com.github.elementbound.NetWind
 
         public void RestoreInput(int tick)
         {
-            Debug.Log($"[Input] Restoring input {inputBuffer.Get(tick)} from tick {tick}");
-            ApplyInput(inputBuffer.Get(tick));
+            try
+            {
+                Debug.Log($"[Input] Restoring input {inputBuffer.Get(tick)} from tick {tick}");
+                ApplyInput(inputBuffer.Get(tick));
+            } catch (IndexOutOfRangeException)
+            {
+                Debug.LogWarning($"[Input] Couldn't restore input for tick {tick}, ignoring");
+            }
         }
 
         public void SaveInput(int tick)
         {
-            if (IsOwner)
+            if (IsOwn)
             {
                 hasNewInput = true;
                 earliestReceivedInput = Math.Min(earliestReceivedInput, tick);

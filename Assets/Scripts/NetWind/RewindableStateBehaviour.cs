@@ -14,7 +14,7 @@ namespace com.github.elementbound.NetWind
 
         public ulong NetId => NetworkObjectId;
 
-        public bool IsOwn => IsOwner;
+        public bool IsOwn => IsOwner || (IsOwnedByServer && IsServer);
 
         public int LatestReceivedState => latestReceivedState;
 
