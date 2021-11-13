@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7763243523963654036}
   - component: {fileID: 8223645882527960981}
+  - component: {fileID: 3045620104969301989}
   - component: {fileID: 7763243523963654035}
   - component: {fileID: 7763243523963654034}
   - component: {fileID: 7763243523963654038}
@@ -51,6 +52,18 @@ MonoBehaviour:
   AlwaysReplicateAsRoot: 0
   DontDestroyWithOwner: 0
   AutoObjectParentSync: 1
+--- !u!114 &3045620104969301989
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7763243523963654032}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0e3eb52eee7493a49b2a252f7c98fd16, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!33 &7763243523963654035
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -132,24 +145,3 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   moveSpeed: 6
   inputProvider: {fileID: 0}
-  inputCache:
-    data: []
-    latestFrame: 0
-    headIdx: 0
-    defaultValue:
-      movement: {x: 0, y: 0, z: 0}
-  stateCache:
-    data: []
-    latestFrame: 0
-    headIdx: 0
-    defaultValue:
-      position: {x: 0, y: 0, z: 0}
-  earliestInput: 0
-  earliestState: 0
-  needsResimulation: 0
-  fromState:
-    position: {x: 0, y: 0, z: 0}
-  toState:
-    position: {x: 0, y: 0, z: 0}
-  fromTime: 0
-  toTime: 0
