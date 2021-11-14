@@ -10,7 +10,7 @@ namespace com.github.elementbound.NetWind
         [SerializeField] private TickHistoryBuffer<T> stateBuffer;
         [SerializeField] private int latestReceivedState = 0;
         [SerializeField] private bool hasNewState = false;
-        [SerializeField] private IRewindableInput controlledBy;
+        private IRewindableInput controlledBy;
 
         public ulong NetId => NetworkObjectId;
 
@@ -44,20 +44,16 @@ namespace com.github.elementbound.NetWind
 
         public void RestoreState(int tick)
         {
-            Debug.Log($"[State] Restoring state {stateBuffer.Get(tick)} from tick {tick}");
             ApplyState(stateBuffer.Get(tick));
         }
 
         public void SaveState(int tick)
         {
-            T state = CaptureState();
-            Debug.Log($"[State] Saving state {state} for tick {tick}");
-            stateBuffer.Set(state, tick);
+            stateBuffer.Set(CaptureState(), tick);
         }
 
         public void CommitState(int tick)
         {
-            Debug.Log($"[State] Restoring state {stateBuffer.Get(tick)} for tick {tick}");
             CommitState(stateBuffer.Get(tick), tick);
         }
 

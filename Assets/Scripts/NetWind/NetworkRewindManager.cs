@@ -57,12 +57,9 @@ namespace com.github.elementbound.NetWind
                     .Select(input => input.EarliestReceivedInput)
                     .Min();
 
-                Debug.Log($"[Host] Received new input, earliest is {earliestInput} ( {currentTick - earliestInput} ago )");
-
                 foreach (var input in inputHandlers)
                     input.AcknowledgeInputs();
 
-                Debug.Log($"[Host] Resimulating from {earliestInput} to {currentTick}");
                 for (int tick = earliestInput; tick <= currentTick; ++tick)
                 {
                     foreach (var input in inputHandlers)
@@ -107,7 +104,6 @@ namespace com.github.elementbound.NetWind
                         .Select(state => state.LatestReceivedState)
                         .Min();
 
-                    Debug.Log($"[Client] Resimulating from earliest authorative tick {resimulateFrom} to {currentTick}");
                     for (int tick = resimulateFrom; tick <= currentTick; ++tick)
                     {
                         foreach (var input in inputHandlers)
@@ -145,12 +141,9 @@ namespace com.github.elementbound.NetWind
                         .Select(input => input.EarliestReceivedInput)
                         .Min();
 
-                    Debug.Log($"[Server] Received new input, earliest is {earliestInput} ( {currentTick - earliestInput} ago )");
-
                     foreach (var input in inputHandlers)
                         input.AcknowledgeInputs();
 
-                    Debug.Log($"[Server] Resimulating from {earliestInput} to {currentTick}");
                     for (int tick = earliestInput; tick <= currentTick; ++tick)
                     {
                         foreach (var input in inputHandlers)

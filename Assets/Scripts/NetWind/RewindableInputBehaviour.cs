@@ -35,11 +35,9 @@ namespace com.github.elementbound.NetWind
         {
             try
             {
-                Debug.Log($"[Input] Restoring input {inputBuffer.Get(tick)} from tick {tick}");
                 ApplyInput(inputBuffer.Get(tick));
             } catch (IndexOutOfRangeException)
             {
-                // TODO: This shouldn't happen
                 Debug.LogWarning($"[Input] Couldn't restore input for tick {tick}, ignoring");
             }
         }
@@ -53,7 +51,6 @@ namespace com.github.elementbound.NetWind
             }
 
             T input = CaptureInput();
-            Debug.Log($"[Input] Saving input {input} for tick {tick}");
             inputBuffer.Set(input, tick);
         }
 
@@ -66,7 +63,6 @@ namespace com.github.elementbound.NetWind
 
         protected void HandleInputCommit(T state, int tick)
         {
-            Debug.Log($"[Server][Input] Received input {state} for tick {tick}");
             inputBuffer.Set(state, tick);
             earliestReceivedInput = Math.Min(tick, earliestReceivedInput);
             hasNewInput = true;

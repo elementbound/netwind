@@ -31,8 +31,6 @@ public class PlayerMovementController : RewindableStateBehaviour<PlayerMovementC
     {
         var input = inputProvider.Current;
         transform.position += input.movement * moveSpeed * deltaTime;
-
-        Debug.Log($"[State] Simulated state from tick {tick} with result {CaptureState()}");
     }
 
     protected override State CaptureState()
