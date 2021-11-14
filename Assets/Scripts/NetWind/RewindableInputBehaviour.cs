@@ -39,6 +39,7 @@ namespace com.github.elementbound.NetWind
                 ApplyInput(inputBuffer.Get(tick));
             } catch (IndexOutOfRangeException)
             {
+                // TODO: This shouldn't happen
                 Debug.LogWarning($"[Input] Couldn't restore input for tick {tick}, ignoring");
             }
         }

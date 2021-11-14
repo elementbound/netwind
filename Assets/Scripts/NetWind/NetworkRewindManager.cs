@@ -111,7 +111,8 @@ namespace com.github.elementbound.NetWind
                     for (int tick = resimulateFrom; tick <= currentTick; ++tick)
                     {
                         foreach (var input in inputHandlers)
-                            input.RestoreInput(tick);
+                            if (input.IsOwn)
+                                input.RestoreInput(tick);
 
                         foreach (var state in stateHandlers)
                             state.RestoreState(tick - 1);
