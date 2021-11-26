@@ -3312,8 +3312,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_ProtocolType: 0
   m_MaximumPacketSize: 1400
-  m_MaxPacketQueueSize: 128
-  m_SendQueueBatchSize: 6144
+  m_MaxPacketQueueSize: 1024
+  m_SendQueueBatchSize: 12288
   ConnectionData:
     Address: 127.0.0.1
     Port: 7777

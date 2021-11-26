@@ -10,7 +10,6 @@ namespace com.github.elementbound.NetWind
         [SerializeField] private TickHistoryBuffer<T> stateBuffer;
         [SerializeField] private int latestReceivedState = 0;
         [SerializeField] private bool hasNewState = false;
-        private IRewindableInput controlledBy;
 
         public ulong NetId => NetworkObjectId;
 
@@ -20,7 +19,7 @@ namespace com.github.elementbound.NetWind
 
         public bool HasNewState => hasNewState;
 
-        public IRewindableInput ControlledBy => controlledBy;
+        public IRewindableInput ControlledBy { get; private set; }
 
         public override void OnNetworkSpawn()
         {
@@ -33,8 +32,7 @@ namespace com.github.elementbound.NetWind
             for (int i = 0; i < NetworkRewindManager.Instance.HistorySize; ++i)
                 stateBuffer.Set(state, currentTick - i);
 
-            if (controlledBy == null)
-                controlledBy = GetComponent<IRewindableInput>();
+           ControlledBy ??= GetComponent<IRewindableInput>();
 
             NetworkRewindManager.Instance.RegisterState(this);
         }
@@ -54,6 +52,7 @@ namespace com.github.elementbound.NetWind
 
         public void CommitState(int tick)
         {
+            Debug.Log($"[State] Committing state {tick} ( current {NetworkManager.LocalTime.Tick} )");
             CommitState(stateBuffer.Get(tick), tick);
         }
 
@@ -63,6 +62,8 @@ namespace com.github.elementbound.NetWind
 
         protected void HandleStateCommit(T state, int tick)
         {
+            Debug.Log($"[State] Received authorative state #{tick}, latest is {latestReceivedState} -> {Math.Max(tick, latestReceivedState)}");
+
             stateBuffer.Set(state, tick);
             latestReceivedState = Math.Max(tick, latestReceivedState);
             hasNewState = true;
@@ -71,6 +72,7 @@ namespace com.github.elementbound.NetWind
         public void AcknowledgeStates()
         {
             hasNewState = false;
+            latestReceivedState = 0;
         }
     }
 }

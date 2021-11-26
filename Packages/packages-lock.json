@@ -53,7 +53,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.ide.visualstudio": {
-      "version": "2.0.11",
+      "version": "2.0.12",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -76,17 +76,17 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.netcode.adapter.utp": {
-      "version": "1.0.0-pre.2",
+      "version": "1.0.0-pre.3",
       "depth": 0,
       "source": "registry",
       "dependencies": {
-        "com.unity.netcode.gameobjects": "1.0.0-pre.2",
-        "com.unity.transport": "1.0.0-pre.6"
+        "com.unity.netcode.gameobjects": "1.0.0-pre.3",
+        "com.unity.transport": "1.0.0-pre.7"
       },
       "url": "https://packages.unity.com"
     },
     "com.unity.netcode.gameobjects": {
-      "version": "1.0.0-pre.2",
+      "version": "1.0.0-pre.3",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -137,7 +137,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.test-framework": {
-      "version": "1.1.29",
+      "version": "1.1.30",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -156,18 +156,6 @@
       },
       "url": "https://packages.unity.com"
     },
-    "com.unity.timeline": {
-      "version": "1.5.6",
-      "depth": 0,
-      "source": "registry",
-      "dependencies": {
-        "com.unity.modules.director": "1.0.0",
-        "com.unity.modules.animation": "1.0.0",
-        "com.unity.modules.audio": "1.0.0",
-        "com.unity.modules.particlesystem": "1.0.0"
-      },
-      "url": "https://packages.unity.com"
-    },
     "com.unity.toolchain.win-x86_64-linux-x86_64": {
       "version": "0.1.21-preview",
       "depth": 0,
@@ -179,7 +167,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.transport": {
-      "version": "1.0.0-pre.6",
+      "version": "1.0.0-pre.7",
       "depth": 1,
       "source": "registry",
       "dependencies": {

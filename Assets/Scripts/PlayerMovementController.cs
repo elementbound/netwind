@@ -1,21 +1,9 @@
 ﻿using UnityEngine;
-using Unity.Netcode;
 using com.github.elementbound.NetWind;
-using System;
 
-public class PlayerMovementController : RewindableStateBehaviour<PlayerMovementController.State>
+[RequireComponent(typeof(RewindableTransformState))]
+public class PlayerMovementController : EmptyStateBehaviour
 {
-    [Serializable]
-    public struct State
-    {
-        public Vector3 position;
-
-        public override string ToString()
-        {
-            return $"PlayerState({position})";
-        }
-    }
-
     [Header("Configuration")]
     [SerializeField] private float moveSpeed = 2f;
 
@@ -29,33 +17,8 @@ public class PlayerMovementController : RewindableStateBehaviour<PlayerMovementC
 
     public override void Simulate(int tick, float deltaTime)
     {
+        Debug.Log($"[Player] Simulating tick {tick}");
         var input = inputProvider.Current;
         transform.position += input.movement * moveSpeed * deltaTime;
-    }
-
-    protected override State CaptureState()
-    {
-        var state = new State()
-        {
-            position = transform.position
-        };
-
-        return state;
-    }
-
-    protected override void ApplyState(State state)
-    {
-        transform.position = state.position;
-    }
-
-    protected override void CommitState(State state, int tick)
-    {
-        CommitStateClientRpc(state, tick);
-    }
-
-    [ClientRpc]
-    private void CommitStateClientRpc(State state, int tick)
-    {
-        HandleStateCommit(state, tick);
     }
 }
