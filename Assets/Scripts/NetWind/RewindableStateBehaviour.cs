@@ -7,7 +7,7 @@ namespace com.github.elementbound.NetWind
     public abstract class RewindableStateBehaviour<T> : NetworkBehaviour, IRewindableState
     {
         [Header("NetWind")]
-        [SerializeField] private TickHistoryBuffer<T> stateBuffer;
+        [SerializeField] protected TickHistoryBuffer<T> stateBuffer;
         [SerializeField] private int latestReceivedState = 0;
         [SerializeField] private bool hasNewState = false;
 
@@ -20,6 +20,7 @@ namespace com.github.elementbound.NetWind
         public bool HasNewState => hasNewState;
 
         public IRewindableInput ControlledBy { get; private set; }
+        public abstract bool IsInterpolated { get; }
 
         public override void OnNetworkSpawn()
         {
@@ -74,5 +75,7 @@ namespace com.github.elementbound.NetWind
             hasNewState = false;
             latestReceivedState = 0;
         }
+
+        public abstract void InterpolateState(int tickFrom, int tickTo, float f);
     }
 }

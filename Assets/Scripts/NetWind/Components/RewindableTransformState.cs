@@ -14,6 +14,11 @@ namespace com.github.elementbound.NetWind
             public Quaternion localRotation;
         }
 
+        [Header("Configuration")]
+        [SerializeField] private bool isInterpolated = true;
+
+        public override bool IsInterpolated => isInterpolated;
+
         protected override State CaptureState()
         {
             return new State()
@@ -44,6 +49,21 @@ namespace com.github.elementbound.NetWind
         private void CommitStateClientRpc(State state, int tick)
         {
             HandleStateCommit(state, tick);
+        }
+
+        public override void InterpolateState(int tickFrom, int tickTo, float f)
+        {
+            var fromState = stateBuffer.Get(tickFrom);
+            var toState = stateBuffer.Get(tickTo);
+
+            var interpolatedState = new State()
+            {
+                localPosition = Vector3.Lerp(fromState.localPosition, toState.localPosition, f),
+                localScale = Vector3.Lerp(fromState.localScale, toState.localScale, f),
+                localRotation = Quaternion.Lerp(fromState.localRotation, toState.localRotation, f)
+            };
+
+            ApplyState(interpolatedState);
         }
     }
 }

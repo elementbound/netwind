@@ -17,6 +17,7 @@ namespace com.github.elementbound.NetWind
         [SerializeField] private int historySize = 64;
 
         [Header("Runtime")]
+        private double nextTickAt;
         private readonly HashSet<IRewindableState> stateHandlers = new HashSet<IRewindableState>();
         private readonly HashSet<IRewindableInput> inputHandlers = new HashSet<IRewindableInput>();
 
@@ -40,10 +41,22 @@ namespace com.github.elementbound.NetWind
             NetworkManager.NetworkTickSystem.Tick += NetworkUpdate;
         }
 
+        private void Update()
+        {
+            var displayedTick = NetworkManager.LocalTime.Tick - displayOffset;
+            var currentTime = NetworkManager.LocalTime.Time;
+            var f = (float)(1.0 - (nextTickAt - currentTime) / NetworkManager.LocalTime.FixedDeltaTime);
+
+            foreach (var state in stateHandlers)
+                if (state.IsInterpolated)
+                    state.InterpolateState(displayedTick - 1, displayedTick, f);
+        }
+
         private void NetworkUpdate()
         {
             int currentTick = NetworkManager.LocalTime.Tick;
             float deltaTime = NetworkManager.LocalTime.FixedDeltaTime;
+            nextTickAt = NetworkManager.LocalTime.Time + deltaTime;
 
             if (IsHost)
             {

@@ -14,6 +14,8 @@ namespace com.github.elementbound.NetWind
 
         public bool IsOwn => IsOwner || (IsOwnedByServer && IsServer);
 
+        public bool IsInterpolated => false;
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
@@ -39,5 +41,9 @@ namespace com.github.elementbound.NetWind
         }
 
         public abstract void Simulate(int tick, float deltaTime);
+
+        public void InterpolateState(int tickFrom, int tickTo, float f)
+        {
+        }
     }
 }
