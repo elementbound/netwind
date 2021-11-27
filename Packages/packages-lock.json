@@ -7,6 +7,12 @@
       "dependencies": {},
       "hash": "b08829c71ca40065fe6d7c99cd3aee059cd02fa7"
     },
+    "com.github.elementbound.netwind": {
+      "version": "file:com.github.elementbound.netwind",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {}
+    },
     "com.unity.burst": {
       "version": "1.5.6",
       "depth": 2,

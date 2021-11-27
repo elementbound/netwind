@@ -1,0 +1,11 @@
+{
+  "name": "com.github.elementbound.netwind",
+  "version": "0.1.0",
+
+  "description": "Client-side prediction and server reconciliation framework for Netcode for GameObjects",
+  "displayName": "Netwind",
+  "unity": "2020.1",
+
+  "hideInEditor": false,
+  "license": "MIT"
+}
