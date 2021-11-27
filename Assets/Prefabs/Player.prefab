@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 7763243523963654035}
   - component: {fileID: 7763243523963654034}
   - component: {fileID: 7763243523963654038}
+  - component: {fileID: 1224267061360328199}
   - component: {fileID: 7763243523963654037}
   m_Layer: 0
   m_Name: Player
@@ -113,11 +114,35 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 86b0f2c1ec1c3a5459f5235aa059e861, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  inputBuffer:
+    data: []
+    latestFrame: 0
+    headIdx: 0
+  earliestReceivedInput: 0
+  hasNewInput: 0
   currentInput:
     movement: {x: 0, y: 0, z: 0}
   cumulativeInput:
     movement: {x: 0, y: 0, z: 0}
   sampleCount: 0
+--- !u!114 &1224267061360328199
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7763243523963654032}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a287e2fd019025e448cd29fb7feee991, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  stateBuffer:
+    data: []
+    latestFrame: 0
+    headIdx: 0
+  latestReceivedState: 0
+  hasNewState: 0
 --- !u!114 &7763243523963654037
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -132,24 +157,3 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   moveSpeed: 6
   inputProvider: {fileID: 0}
-  inputCache:
-    data: []
-    latestFrame: 0
-    headIdx: 0
-    defaultValue:
-      movement: {x: 0, y: 0, z: 0}
-  stateCache:
-    data: []
-    latestFrame: 0
-    headIdx: 0
-    defaultValue:
-      position: {x: 0, y: 0, z: 0}
-  earliestInput: 0
-  earliestState: 0
-  needsResimulation: 0
-  fromState:
-    position: {x: 0, y: 0, z: 0}
-  toState:
-    position: {x: 0, y: 0, z: 0}
-  fromTime: 0
-  toTime: 0
