@@ -38,6 +38,13 @@ namespace com.github.elementbound.NetWind
             NetworkRewindManager.Instance.RegisterState(this);
         }
 
+        public override void OnDestroy()
+        {
+            base.OnDestroy();
+
+            NetworkRewindManager.Instance.RemoveState(this);
+        }
+
         protected abstract T CaptureState();
         protected abstract void ApplyState(T state);
 

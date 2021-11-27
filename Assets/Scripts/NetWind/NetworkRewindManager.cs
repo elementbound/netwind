@@ -34,6 +34,16 @@ namespace com.github.elementbound.NetWind
             stateHandlers.Add(state);
         }
 
+        public void RemoveInput(IRewindableInput input)
+        {
+            inputHandlers.Remove(input);
+        }
+
+        public void RemoveState(IRewindableState state)
+        {
+            stateHandlers.Remove(state);
+        }
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();

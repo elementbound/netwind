@@ -28,6 +28,13 @@ namespace com.github.elementbound.NetWind
             NetworkRewindManager.Instance.RegisterInput(this);
         }
 
+        public override void OnDestroy()
+        {
+            base.OnDestroy();
+
+            NetworkRewindManager.Instance.RemoveInput(this);
+        }
+
         protected abstract T CaptureInput();
         protected abstract void ApplyInput(T input);
 
