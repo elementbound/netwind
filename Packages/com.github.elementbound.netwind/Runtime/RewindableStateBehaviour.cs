@@ -60,7 +60,6 @@ namespace com.github.elementbound.NetWind
 
         public void CommitState(int tick)
         {
-            Debug.Log($"[State] Committing state {tick} ( current {NetworkManager.LocalTime.Tick} )");
             CommitState(stateBuffer.Get(tick), tick);
         }
 
@@ -70,8 +69,6 @@ namespace com.github.elementbound.NetWind
 
         protected void HandleStateCommit(T state, int tick)
         {
-            Debug.Log($"[State] Received authorative state #{tick}, latest is {latestReceivedState} -> {Math.Max(tick, latestReceivedState)}");
-
             stateBuffer.Set(state, tick);
             latestReceivedState = Math.Max(tick, latestReceivedState);
             hasNewState = true;

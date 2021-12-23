@@ -9,10 +9,12 @@ public class InputProvider : RewindableInputBehaviour<InputProvider.State>
     public struct State
     {
         public Vector3 movement;
+        public bool isSpawning;
 
         public void Reset()
         {
             movement = Vector3.zero;
+            isSpawning = false;
         }
 
         public State AverageOver(int sampleCount)
@@ -21,13 +23,14 @@ public class InputProvider : RewindableInputBehaviour<InputProvider.State>
 
             return new State()
             {
+                isSpawning = this.isSpawning,
                 movement = this.movement / sampleCount
             };
         }
 
         public override string ToString()
         {
-            return $"Input({movement})";
+            return $"Input({movement}; isSpawning={isSpawning})";
         }
     }
 
@@ -45,6 +48,7 @@ public class InputProvider : RewindableInputBehaviour<InputProvider.State>
                 movement.Normalize();
 
             cumulativeInput.movement += movement;
+            cumulativeInput.isSpawning |= Input.GetButton("Fire1");
             sampleCount++;
         }
     }

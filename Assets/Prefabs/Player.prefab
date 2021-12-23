@@ -122,8 +122,10 @@ MonoBehaviour:
   hasNewInput: 0
   currentInput:
     movement: {x: 0, y: 0, z: 0}
+    isSpawning: 0
   cumulativeInput:
     movement: {x: 0, y: 0, z: 0}
+    isSpawning: 0
   sampleCount: 0
 --- !u!114 &1224267061360328199
 MonoBehaviour:
@@ -143,6 +145,7 @@ MonoBehaviour:
     headIdx: 0
   latestReceivedState: 0
   hasNewState: 0
+  isInterpolated: 1
 --- !u!114 &7763243523963654037
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -156,4 +159,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   moveSpeed: 6
+  minionPrefab: {fileID: 6413792992710568429, guid: 86f61b2b72c0fe245a254260ab861c46, type: 3}
+  spawnCooldown: 0.5
   inputProvider: {fileID: 0}
+  lastSpawn: 0

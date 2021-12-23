@@ -63,7 +63,6 @@ namespace com.github.elementbound.NetWind
 
         public void CommitInput(int tick)
         {
-            Debug.Log($"[Input] Committing input for tick {tick}");
             CommitInput(inputBuffer.Get(tick), tick);
         }
 
@@ -71,7 +70,6 @@ namespace com.github.elementbound.NetWind
 
         protected void HandleInputCommit(T state, int tick)
         {
-            Debug.Log($"[Input] Received input for tick {tick}");
             inputBuffer.Set(state, tick);
             earliestReceivedInput = Math.Min(tick, earliestReceivedInput);
             hasNewInput = true;
