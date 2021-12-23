@@ -18,11 +18,12 @@ namespace com.github.elementbound.NetWind
 
         [Header("Runtime")]
         private double nextTickAt;
-        private readonly HashSet<IRewindableState> stateHandlers = new HashSet<IRewindableState>();
-        private readonly HashSet<IRewindableInput> inputHandlers = new HashSet<IRewindableInput>();
+        private readonly DeferredMutableSet<IRewindableState> stateHandlers = new DeferredMutableSet<IRewindableState>();
+        private readonly DeferredMutableSet<IRewindableInput> inputHandlers = new DeferredMutableSet<IRewindableInput>();
 
         public int HistorySize => historySize;
         public int DisplayOffset => displayOffset;
+        public double Time { get; private set; }
 
         public void RegisterInput(IRewindableInput input)
         {
@@ -49,6 +50,7 @@ namespace com.github.elementbound.NetWind
             base.OnNetworkSpawn();
 
             NetworkManager.NetworkTickSystem.Tick += NetworkUpdate;
+            Time = 0;
         }
 
         private void Update()
@@ -68,6 +70,9 @@ namespace com.github.elementbound.NetWind
             float deltaTime = NetworkManager.LocalTime.FixedDeltaTime;
             nextTickAt = NetworkManager.LocalTime.Time + deltaTime;
 
+            inputHandlers.AcknowledgeMutations();
+            stateHandlers.AcknowledgeMutations();
+
             if (IsHost)
             {
                 foreach (var input in inputHandlers)
@@ -86,6 +91,8 @@ namespace com.github.elementbound.NetWind
                 Debug.Log($"[Host] Resimulating from earliest input {earliestInput} -> {currentTick}");
                 for (int tick = earliestInput; tick <= currentTick; ++tick)
                 {
+                    Time = tick * NetworkManager.LocalTime.FixedDeltaTime;
+
                     foreach (var input in inputHandlers)
                         input.RestoreInput(tick);
 
