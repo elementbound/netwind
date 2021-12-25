@@ -6274,6 +6274,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   displayOffset: 4
   historySize: 64
+  enableSyncPhysicsOnRestore: 1
+  enableStepPhysicsOnSimulate: 0
 --- !u!4 &1942836256
 Transform:
   m_ObjectHideFlags: 0

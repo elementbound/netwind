@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -15,6 +14,8 @@ namespace com.github.elementbound.NetWind
         [Header("Configuration")]
         [SerializeField] private int displayOffset = 2;
         [SerializeField] private int historySize = 64;
+        [SerializeField] private bool enableSyncPhysicsOnRestore;
+        [SerializeField] private bool enableStepPhysicsOnSimulate;
 
         [Header("Runtime")]
         private double nextTickAt;
@@ -24,6 +25,8 @@ namespace com.github.elementbound.NetWind
         public int HistorySize => historySize;
         public int DisplayOffset => displayOffset;
         public double Time { get; private set; }
+
+        public NetworkRewindEvents RewindEvents { get; } = new NetworkRewindEvents();
 
         public void RegisterInput(IRewindableInput input)
         {
@@ -51,6 +54,12 @@ namespace com.github.elementbound.NetWind
 
             NetworkManager.NetworkTickSystem.Tick += NetworkUpdate;
             Time = 0;
+
+            if (enableSyncPhysicsOnRestore)
+                RewindEvents.OnTickRestore += tick => Physics.SyncTransforms();
+
+            if (enableStepPhysicsOnSimulate)
+                RewindEvents.OnTickSimulate += tick => Physics.Simulate(NetworkManager.LocalTime.FixedDeltaTime);
         }
 
         private void Update()
@@ -89,6 +98,8 @@ namespace com.github.elementbound.NetWind
                     input.AcknowledgeInputs();
 
                 Debug.Log($"[Host] Resimulating from earliest input {earliestInput} -> {currentTick}");
+                RewindEvents.BeforeResimulate?.Invoke(earliestInput, currentTick);
+
                 for (int tick = earliestInput; tick <= currentTick; ++tick)
                 {
                     Time = tick * NetworkManager.LocalTime.FixedDeltaTime;
@@ -99,9 +110,13 @@ namespace com.github.elementbound.NetWind
                     foreach (var state in stateHandlers)
                         state.RestoreState(tick - 1);
 
+                    RewindEvents.OnTickRestore?.Invoke(tick);
+
                     foreach (var state in stateHandlers)
                         if (state.ControlledBy == null || tick <= state.ControlledBy.LatestKnownInput)
                             state.Simulate(tick, deltaTime);
+
+                    RewindEvents.OnTickSimulate?.Invoke(tick);
 
                     foreach (var state in stateHandlers)
                         if (state.ControlledBy == null || tick <= state.ControlledBy.LatestKnownInput)
@@ -116,6 +131,7 @@ namespace com.github.elementbound.NetWind
                     state.RestoreState(currentTick - displayOffset);
                     state.AcknowledgeStates();
                 }
+                RewindEvents.OnVisualRestore?.Invoke(currentTick - displayOffset);
             }
             else if (IsClient)
             {
@@ -148,6 +164,8 @@ namespace com.github.elementbound.NetWind
                             .Min();
 
                     Debug.Log($"[Client] Resimulating {resimulateFrom} -> {currentTick}");
+                    RewindEvents.BeforeResimulate?.Invoke(resimulateFrom, currentTick);
+
                     for (int tick = resimulateFrom; tick <= currentTick; ++tick)
                     {
                         foreach (var input in inputHandlers)
@@ -157,11 +175,15 @@ namespace com.github.elementbound.NetWind
                         foreach (var state in stateHandlers)
                             state.RestoreState(tick - 1);
 
+                        RewindEvents.OnTickRestore?.Invoke(tick);
+
                         foreach (var state in stateHandlers)
                             if (state.IsOwn && tick >= state.LatestReceivedState)
                                 state.Simulate(tick, deltaTime);
                             else if (state.IsOwn)
                                 Debug.Log($"[Client] Skipping simulation of state for tick {tick}, latest known is {state.LatestReceivedState}");
+
+                        RewindEvents.OnTickSimulate?.Invoke(tick);
 
                         foreach (var state in stateHandlers)
                             if (state.IsOwn && tick >= state.LatestReceivedState)
@@ -174,6 +196,8 @@ namespace com.github.elementbound.NetWind
                     state.AcknowledgeStates();
                     state.RestoreState(currentTick - displayOffset);
                 }
+
+                RewindEvents.OnVisualRestore?.Invoke(currentTick - displayOffset);
 
                 foreach (var input in inputHandlers)
                     input.AcknowledgeInputs();
@@ -192,6 +216,7 @@ namespace com.github.elementbound.NetWind
                     foreach (var input in inputHandlers)
                         input.AcknowledgeInputs();
 
+                    RewindEvents.BeforeResimulate?.Invoke(earliestInput, currentTick);
                     for (int tick = earliestInput; tick <= currentTick; ++tick)
                     {
                         foreach (var input in inputHandlers)
@@ -200,9 +225,13 @@ namespace com.github.elementbound.NetWind
                         foreach (var state in stateHandlers)
                             state.RestoreState(tick - 1);
 
+                        RewindEvents.OnTickRestore?.Invoke(tick);
+
                         foreach (var state in stateHandlers)
                             if (state.ControlledBy != null && state.ControlledBy.LatestKnownInput >= tick)
                                 state.Simulate(tick, deltaTime);
+
+                        RewindEvents.OnTickSimulate?.Invoke(tick);
 
                         foreach (var state in stateHandlers)
                             if (state.ControlledBy != null && state.ControlledBy.LatestKnownInput >= tick)
@@ -214,6 +243,8 @@ namespace com.github.elementbound.NetWind
 
                     foreach (var state in stateHandlers)
                         state.RestoreState(currentTick - displayOffset);
+
+                    RewindEvents.OnVisualRestore?.Invoke(currentTick - displayOffset);
                 }
             }
         }

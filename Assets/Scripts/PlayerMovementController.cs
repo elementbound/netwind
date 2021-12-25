@@ -3,6 +3,7 @@ using Unity.Netcode;
 using com.github.elementbound.NetWind;
 
 [RequireComponent(typeof(RewindableTransformState))]
+[RequireComponent(typeof(CharacterController))]
 public class PlayerMovementController : EmptyStateBehaviour
 {
     [Header("Configuration")]
@@ -11,6 +12,7 @@ public class PlayerMovementController : EmptyStateBehaviour
     [SerializeField] private double spawnCooldown = 0.5f;
 
     [Header("Dependencies")]
+    [SerializeField] private CharacterController characterController;
     [SerializeField] private InputProvider inputProvider;
     [SerializeField] private OnceFlag spawnFlag;
     [SerializeField] private double lastSpawn;
@@ -18,12 +20,13 @@ public class PlayerMovementController : EmptyStateBehaviour
     private void OnEnable()
     {
         inputProvider ??= GetComponent<InputProvider>();
+        characterController = GetComponent<CharacterController>();
     }
 
     public override void Simulate(int tick, float deltaTime)
     {
         var input = inputProvider.Current;
-        transform.position += input.movement * moveSpeed * deltaTime;
+        characterController.Move(input.movement * moveSpeed * deltaTime);
 
         if (IsServer)
         {
