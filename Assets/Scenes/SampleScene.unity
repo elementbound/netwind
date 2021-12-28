@@ -3312,7 +3312,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_ProtocolType: 0
   m_MaximumPacketSize: 1400
-  m_MaxPacketQueueSize: 1024
+  m_MaxPacketQueueSize: 4096
   m_SendQueueBatchSize: 12288
   m_HeartbeatTimeoutMS: 500
   m_ConnectTimeoutMS: 1000

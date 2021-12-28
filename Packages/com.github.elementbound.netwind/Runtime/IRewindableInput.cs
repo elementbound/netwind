@@ -1,4 +1,6 @@
-﻿namespace com.github.elementbound.NetWind
+﻿using UnityEngine;
+
+namespace com.github.elementbound.NetWind
 {
     public interface IRewindableInput : INetworkObject
     {

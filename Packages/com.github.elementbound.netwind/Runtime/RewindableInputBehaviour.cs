@@ -25,14 +25,6 @@ namespace com.github.elementbound.NetWind
             base.OnNetworkSpawn();
 
             inputBuffer = new TickHistoryBuffer<T>(NetworkRewindManager.Instance.HistorySize, NetworkManager.LocalTime.Tick);
-            NetworkRewindManager.Instance.RegisterInput(this);
-        }
-
-        public override void OnDestroy()
-        {
-            base.OnDestroy();
-
-            NetworkRewindManager.Instance.RemoveInput(this);
         }
 
         protected abstract T CaptureInput();

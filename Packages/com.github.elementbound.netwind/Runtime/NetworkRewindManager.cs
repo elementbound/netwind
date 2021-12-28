@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -19,8 +20,7 @@ namespace com.github.elementbound.NetWind
 
         [Header("Runtime")]
         private double nextTickAt;
-        private readonly DeferredMutableSet<IRewindableState> stateHandlers = new DeferredMutableSet<IRewindableState>();
-        private readonly DeferredMutableSet<IRewindableInput> inputHandlers = new DeferredMutableSet<IRewindableInput>();
+        private readonly DeferredMutableSet<IRewindableObject> rewindableObjects = new DeferredMutableSet<IRewindableObject>();
 
         public int HistorySize => historySize;
         public int DisplayOffset => displayOffset;
@@ -28,24 +28,24 @@ namespace com.github.elementbound.NetWind
 
         public NetworkRewindEvents RewindEvents { get; } = new NetworkRewindEvents();
 
-        public void RegisterInput(IRewindableInput input)
+        public void RegisterRewindable(IRewindableObject rewindable)
         {
-            inputHandlers.Add(input);
+            rewindableObjects.Add(rewindable);
         }
 
-        public void RegisterState(IRewindableState state)
+        public void RemoveRewindable(IRewindableObject rewindable)
         {
-            stateHandlers.Add(state);
+            rewindableObjects.Remove(rewindable);
         }
 
-        public void RemoveInput(IRewindableInput input)
+        private IEnumerable<IRewindableState> GetStates()
         {
-            inputHandlers.Remove(input);
+            return rewindableObjects.SelectMany(rewindable => rewindable.GetStates());
         }
 
-        public void RemoveState(IRewindableState state)
+        private IEnumerable<IRewindableInput> GetInputs()
         {
-            stateHandlers.Remove(state);
+            return rewindableObjects.SelectMany(rewindable => rewindable.GetInputs());
         }
 
         public override void OnNetworkSpawn()
@@ -68,7 +68,7 @@ namespace com.github.elementbound.NetWind
             var currentTime = NetworkManager.LocalTime.Time;
             var f = (float)(1.0 - (nextTickAt - currentTime) / NetworkManager.LocalTime.FixedDeltaTime);
 
-            foreach (var state in stateHandlers)
+            foreach (var state in GetStates())
                 if (state.IsInterpolated)
                     state.InterpolateState(displayedTick - 1, displayedTick, f);
         }
@@ -79,22 +79,21 @@ namespace com.github.elementbound.NetWind
             float deltaTime = NetworkManager.LocalTime.FixedDeltaTime;
             nextTickAt = NetworkManager.LocalTime.Time + deltaTime;
 
-            inputHandlers.AcknowledgeMutations();
-            stateHandlers.AcknowledgeMutations();
+            rewindableObjects.AcknowledgeMutations();
 
             if (IsHost)
             {
-                foreach (var input in inputHandlers)
+                foreach (var input in GetInputs())
                     if (input.IsOwn)
                         input.SaveInput(currentTick);
 
                 // There's always a new input, since there's a local player with input
-                int earliestInput = inputHandlers
+                int earliestInput = GetInputs()
                     .Where(input => input.HasNewInput)
                     .Select(input => input.EarliestReceivedInput)
                     .Min();
 
-                foreach (var input in inputHandlers)
+                foreach (var input in GetInputs())
                     input.AcknowledgeInputs();
 
                 Debug.Log($"[Host] Resimulating from earliest input {earliestInput} -> {currentTick}");
@@ -104,21 +103,23 @@ namespace com.github.elementbound.NetWind
                 {
                     Time = tick * NetworkManager.LocalTime.FixedDeltaTime;
 
-                    foreach (var input in inputHandlers)
+                    foreach (var input in GetInputs())
                         input.RestoreInput(tick);
 
-                    foreach (var state in stateHandlers)
+                    foreach (var state in GetStates())
                         state.RestoreState(tick - 1);
+
+                    ApplyAlivenessForTick(tick);
 
                     RewindEvents.OnTickRestore?.Invoke(tick);
 
-                    foreach (var state in stateHandlers)
+                    foreach (var state in GetStates())
                         if (state.ControlledBy == null || tick <= state.ControlledBy.LatestKnownInput)
                             state.Simulate(tick, deltaTime);
 
                     RewindEvents.OnTickSimulate?.Invoke(tick);
 
-                    foreach (var state in stateHandlers)
+                    foreach (var state in GetStates())
                         if (state.ControlledBy == null || tick <= state.ControlledBy.LatestKnownInput)
                         {
                             state.SaveState(tick);
@@ -126,7 +127,14 @@ namespace com.github.elementbound.NetWind
                         }
                 }
 
-                foreach (var state in stateHandlers)
+                // Destroy rewindables marked for destroy a sufficient time ago
+                // ( so that we won't rewind to a time where they exist )
+                foreach (var netObj in GetNetworkObjectsToDelete(currentTick))
+                    netObj.Despawn();
+
+                ApplyAlivenessForTick(currentTick - displayOffset);
+
+                foreach (var state in GetStates())
                 {
                     state.RestoreState(currentTick - displayOffset);
                     state.AcknowledgeStates();
@@ -136,7 +144,7 @@ namespace com.github.elementbound.NetWind
             else if (IsClient)
             {
                 // Gather and send inputs
-                foreach (var input in inputHandlers)
+                foreach (var input in GetInputs())
                 {
                     if (input.IsOwn)
                     {
@@ -145,11 +153,11 @@ namespace com.github.elementbound.NetWind
                     }
                 }
 
-                bool hasNewState = stateHandlers
+                bool hasNewState = GetStates()
                     .Any(state => state.HasNewState && state.IsOwn);
 
                 // This should always be true tho
-                bool hasNewInput = inputHandlers
+                bool hasNewInput = GetInputs()
                     .Any(input => input.IsOwn && input.HasNewInput);
                  
                 if (hasNewState || hasNewInput)
@@ -157,7 +165,7 @@ namespace com.github.elementbound.NetWind
                     int resimulateFrom = currentTick;
 
                     if (hasNewState)
-                        resimulateFrom = stateHandlers
+                        resimulateFrom = GetStates()
                             .Where(state => state.HasNewState)
                             .Where(state => state.IsOwn)
                             .Select(state => state.LatestReceivedState)
@@ -168,16 +176,18 @@ namespace com.github.elementbound.NetWind
 
                     for (int tick = resimulateFrom; tick <= currentTick; ++tick)
                     {
-                        foreach (var input in inputHandlers)
+                        foreach (var input in GetInputs())
                             if (input.IsOwn)
                                 input.RestoreInput(tick);
 
-                        foreach (var state in stateHandlers)
+                        foreach (var state in GetStates())
                             state.RestoreState(tick - 1);
+
+                        ApplyAlivenessForTick(tick);
 
                         RewindEvents.OnTickRestore?.Invoke(tick);
 
-                        foreach (var state in stateHandlers)
+                        foreach (var state in GetStates())
                             if (state.IsOwn && tick >= state.LatestReceivedState)
                                 state.Simulate(tick, deltaTime);
                             else if (state.IsOwn)
@@ -185,13 +195,15 @@ namespace com.github.elementbound.NetWind
 
                         RewindEvents.OnTickSimulate?.Invoke(tick);
 
-                        foreach (var state in stateHandlers)
+                        foreach (var state in GetStates())
                             if (state.IsOwn && tick >= state.LatestReceivedState)
                                 state.SaveState(tick);
                     }
                 }
 
-                foreach (var state in stateHandlers)
+                ApplyAlivenessForTick(currentTick - displayOffset);
+
+                foreach (var state in GetStates())
                 {
                     state.AcknowledgeStates();
                     state.RestoreState(currentTick - displayOffset);
@@ -199,41 +211,43 @@ namespace com.github.elementbound.NetWind
 
                 RewindEvents.OnVisualRestore?.Invoke(currentTick - displayOffset);
 
-                foreach (var input in inputHandlers)
+                foreach (var input in GetInputs())
                     input.AcknowledgeInputs();
             }
             else if (IsServer)
             {
-                bool hasNewInput = inputHandlers.Any(input => input.HasNewInput);
+                bool hasNewInput = GetInputs().Any(input => input.HasNewInput);
 
                 if (hasNewInput)
                 {
-                    int earliestInput = inputHandlers
+                    int earliestInput = GetInputs()
                         .Where(input => input.HasNewInput)
                         .Select(input => input.EarliestReceivedInput)
                         .Min();
 
-                    foreach (var input in inputHandlers)
+                    foreach (var input in GetInputs())
                         input.AcknowledgeInputs();
 
                     RewindEvents.BeforeResimulate?.Invoke(earliestInput, currentTick);
                     for (int tick = earliestInput; tick <= currentTick; ++tick)
                     {
-                        foreach (var input in inputHandlers)
+                        foreach (var input in GetInputs())
                             input.RestoreInput(tick);
 
-                        foreach (var state in stateHandlers)
+                        foreach (var state in GetStates())
                             state.RestoreState(tick - 1);
+
+                        ApplyAlivenessForTick(tick);
 
                         RewindEvents.OnTickRestore?.Invoke(tick);
 
-                        foreach (var state in stateHandlers)
+                        foreach (var state in GetStates())
                             if (state.ControlledBy != null && state.ControlledBy.LatestKnownInput >= tick)
                                 state.Simulate(tick, deltaTime);
 
                         RewindEvents.OnTickSimulate?.Invoke(tick);
 
-                        foreach (var state in stateHandlers)
+                        foreach (var state in GetStates())
                             if (state.ControlledBy != null && state.ControlledBy.LatestKnownInput >= tick)
                             {
                                 state.SaveState(tick);
@@ -241,12 +255,40 @@ namespace com.github.elementbound.NetWind
                             }
                     }
 
-                    foreach (var state in stateHandlers)
+                    // Destroy rewindables marked for destroy a sufficient time ago
+                    // ( so that we won't rewind to a time where they exist )
+                    foreach (var netObj in GetNetworkObjectsToDelete(currentTick))
+                        netObj.Despawn();
+
+                    ApplyAlivenessForTick(currentTick - displayOffset);
+
+                    foreach (var state in GetStates())
                         state.RestoreState(currentTick - displayOffset);
 
                     RewindEvents.OnVisualRestore?.Invoke(currentTick - displayOffset);
                 }
             }
+        }
+
+        private void ApplyAlivenessForTick(int tick)
+        {
+            foreach (var rewindable in rewindableObjects)
+            {
+                if (!rewindable.GetDestroyMark().HasValue)
+                    continue;
+
+                var netObj = NetworkManager.SpawnManager.SpawnedObjects[rewindable.NetId];
+                netObj.gameObject.SetActive(tick < rewindable.GetDestroyMark().Value);
+            }
+        }
+
+        private IEnumerable<NetworkObject> GetNetworkObjectsToDelete(int currentTick)
+        {
+            return rewindableObjects
+                                .Where(rewindable => rewindable.GetDestroyMark().HasValue)
+                                .Where(rewindable => rewindable.GetDestroyMark().Value < currentTick - historySize)
+                                .Select(rewindable => rewindable.NetId)
+                                .Select(netId => NetworkManager.SpawnManager.SpawnedObjects[netId]);
         }
     }
 }

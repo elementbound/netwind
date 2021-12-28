@@ -21,14 +21,6 @@ namespace com.github.elementbound.NetWind
             base.OnNetworkSpawn();
 
             ControlledBy ??= GetComponent<IRewindableInput>();
-            NetworkRewindManager.Instance.RegisterState(this);
-        }
-
-        public override void OnDestroy()
-        {
-            base.OnDestroy();
-
-            NetworkRewindManager.Instance.RemoveState(this);
         }
 
         public void AcknowledgeStates()

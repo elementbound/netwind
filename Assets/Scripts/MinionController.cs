@@ -2,6 +2,7 @@
 using Unity.Netcode;
 using com.github.elementbound.NetWind;
 
+[RequireComponent(typeof(RewindableNetworkObject))]
 [RequireComponent(typeof(RewindableTransformState))]
 public class MinionController : EmptyStateBehaviour
 {
@@ -26,7 +27,7 @@ public class MinionController : EmptyStateBehaviour
     {
         if (NetworkRewindManager.Instance.Time - spawnedAt > lifetime && IsServer)
         {
-            GetComponent<NetworkObject>().Despawn();
+            GetComponent<RewindableNetworkObject>().MarkForDestroy(tick);
             return;
         }
 

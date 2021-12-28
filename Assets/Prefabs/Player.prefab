@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7763243523963654036}
   - component: {fileID: 8223645882527960981}
+  - component: {fileID: 6295171600345966762}
   - component: {fileID: 1310864399860975058}
   - component: {fileID: 7763243523963654035}
   - component: {fileID: 7763243523963654034}
@@ -53,6 +54,18 @@ MonoBehaviour:
   AlwaysReplicateAsRoot: 0
   DontDestroyWithOwner: 0
   AutoObjectParentSync: 1
+--- !u!114 &6295171600345966762
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7763243523963654032}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0a36974bfc012854383dd1b032ebc263, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!143 &1310864399860975058
 CharacterController:
   m_ObjectHideFlags: 0
@@ -180,5 +193,6 @@ MonoBehaviour:
   moveSpeed: 6
   minionPrefab: {fileID: 6413792992710568429, guid: 86f61b2b72c0fe245a254260ab861c46, type: 3}
   spawnCooldown: 0.5
+  characterController: {fileID: 0}
   inputProvider: {fileID: 0}
   lastSpawn: 0

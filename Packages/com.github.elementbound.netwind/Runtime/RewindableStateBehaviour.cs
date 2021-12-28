@@ -34,15 +34,6 @@ namespace com.github.elementbound.NetWind
                 stateBuffer.Set(state, currentTick - i);
 
            ControlledBy ??= GetComponent<IRewindableInput>();
-
-            NetworkRewindManager.Instance.RegisterState(this);
-        }
-
-        public override void OnDestroy()
-        {
-            base.OnDestroy();
-
-            NetworkRewindManager.Instance.RemoveState(this);
         }
 
         protected abstract T CaptureState();
