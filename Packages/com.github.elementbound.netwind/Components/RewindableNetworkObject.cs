@@ -9,6 +9,9 @@ namespace com.github.elementbound.NetWind
 
         public bool IsOwn => IsOwner || (IsOwnedByServer && IsServer);
 
+        [Header("Configuration")]
+        [SerializeField] private bool includeChildren;
+
         [Header("Runtime")]
         [SerializeField] private int? destroyTick;
         private IRewindableInput[] inputs = null;
@@ -20,8 +23,8 @@ namespace com.github.elementbound.NetWind
 
             // LIMITATION: Doesn't support adding/removing components on the go
             // If we could somehow subscribe to add/remove events, that would be dope
-            inputs = GetComponents<IRewindableInput>();
-            states = GetComponents<IRewindableState>();
+            inputs = includeChildren ? GetComponentsInChildren<IRewindableInput>() : GetComponents<IRewindableInput>();
+            states = includeChildren ? GetComponentsInChildren<IRewindableState>() : GetComponents<IRewindableState>();
             NetworkRewindManager.Instance.RegisterRewindable(this);
         }
 
