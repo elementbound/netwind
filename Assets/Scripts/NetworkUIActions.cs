@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using Unity.Netcode;
+using Unity.Netcode.Transports.UTP;
 using Netcode.Transports.Enet;
 
 public class NetworkUIActions : MonoBehaviour
