@@ -7,7 +7,7 @@ namespace com.github.elementbound.NetWind
     public class RewindableTransformState : RewindableStateBehaviour<RewindableTransformState.State>
     {
         [Serializable]
-        public struct State
+        public struct State : INetworkSerializeByMemcpy
         {
             public Vector3 localPosition;
             public Vector3 localScale;

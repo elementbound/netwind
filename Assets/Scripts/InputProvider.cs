@@ -6,7 +6,7 @@ using Unity.Netcode;
 public class InputProvider : RewindableInputBehaviour<InputProvider.State>
 {
     [Serializable]
-    public struct State
+    public struct State : INetworkSerializeByMemcpy
     {
         public Vector3 movement;
         public bool isSpawning;
